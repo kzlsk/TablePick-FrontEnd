@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '@/features/auth/hook/useAuth'
 import {
+  initializeFirebaseAppAndMessaging,
   getFCMToken,
   getSavedFCMToken,
   saveFCMToken,
@@ -28,14 +29,21 @@ export default function OauthSuccess() {
       try {
         setLoading(true);
 
+        const messagingInstance = await initializeFirebaseAppAndMessaging();
+
+        if (!messagingInstance) {
+          console.log('firebase 초기화 실패');
+        }
+
         // FCM 토큰 처리와 사용자 정보 요청을 병렬로 실행
         const [userResponse, fcmToken] = await Promise.all([
           api.get(`/api/members`),
           (async () => {
+            if (!messagingInstance) return null;
             try {
               let token = getSavedFCMToken();
               if (!token) {
-                token = await getFCMToken();
+                token = await getFCMToken(messagingInstance);
               }
               return token;
             } catch (fcmError) {

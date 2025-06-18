@@ -22,10 +22,8 @@ const firebaseConfig = {
 };
 
 // Firebase 초기화
-let messaging: Messaging | null = null;
-
-const initializeFirebase = async () => {
-  if (typeof window === 'undefined') return;
+export const initializeFirebaseAppAndMessaging = async (): Promise<Messaging | null> => {
+  if (typeof window === 'undefined') return null; // 서버 사이드 렌더링(SSR) 환경 체크
 
   try {
     const app = initializeApp(firebaseConfig);
@@ -34,7 +32,7 @@ const initializeFirebase = async () => {
     if ('serviceWorker' in navigator) {
       try {
         const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-          scope: '/',
+          scope: '/', // 서비스 워커의 스코프를 웹사이트의 루트로 설정
         });
         console.log('서비스 워커 등록 성공:', registration.scope);
         
@@ -45,9 +43,8 @@ const initializeFirebase = async () => {
           return null;
         }
 
-        // 서비스 워커 등록 후에 messaging 초기화
-        messaging = getMessaging(app);
-        return messaging;
+        // 서비스 워커 등록 후에 messaging 초기화 및 반환
+        return getMessaging(app); // Messaging 인스턴스를 직접 반환
       } catch (error) {
         console.error('서비스 워커 등록 실패:', error);
         return null;
@@ -61,9 +58,6 @@ const initializeFirebase = async () => {
     return null;
   }
 };
-
-// Firebase 초기화 실행
-initializeFirebase();
 
 // 알림 권한 요청
 export async function requestNotificationPermission(): Promise<boolean> {
@@ -89,12 +83,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
 }
 
 // FCM 토큰 가져오기
-export async function getFCMToken(): Promise<string | null> {
-  if (!messaging) {
-    console.error('Firebase 메시징 초기화 실패');
-    return null;
-  }
-
+export async function getFCMToken(messagingInstance : Messaging): Promise<string | null> {
   try {
     const permissionGranted = await requestNotificationPermission();
     if (!permissionGranted) {
@@ -110,9 +99,9 @@ export async function getFCMToken(): Promise<string | null> {
     }
 
     // 새 토큰 요청
-    const token = await getToken(messaging, {
+    const token = await getToken(messagingInstance, {
       vapidKey:
-        import.meta.env.VITE_FIREBASE_VAPID_KEY
+        import.meta.env.VITE_VITE_FIREBASE_VAPID_KEY
     });
 
     if (token) {
@@ -186,14 +175,10 @@ export async function deleteFCMToken(
 
 // 포그라운드 알림 처리
 export function setupNotificationListener(
+  messagingInstance : Messaging,
   callback?: (payload: any) => void
 ): void {
-  if (!messaging) {
-    console.error('Firebase 메시징 초기화 실패');
-    return;
-  }
-
-  onMessage(messaging, (payload) => {
+  onMessage(messagingInstance, (payload) => {
     console.log('포그라운드 메시지 수신:', payload);
 
     if (Notification.permission === 'granted' && payload.notification) {
