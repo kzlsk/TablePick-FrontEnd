@@ -5,11 +5,11 @@ export type NotificationStatus = "PENDING" | "SENT" | "FAILED" | "CANCELLED"
 
 // 알림 타입
 export type NotificationTypes =
+  "REGISTER_COMPLETED" // 회원가입 완료 알림
+  | "RESERVATION_COMPLETED" // 예약 완료 알림
   | "RESERVATION_1DAY_BEFORE" // 예약 1일 전 알림
   | "RESERVATION_3HOURS_BEFORE" // 예약 3시간 전 알림
   | "RESERVATION_1HOUR_BEFORE" // 예약 1시간 전 알림
-  | "RESERVATION_COMPLETED" // 예약 완료 알림
-  | "REGISTER_COMPLETED" // 회원가입 완료 알림
   | "RESERVATION_3HOURS_AFTER" // 예약 3시간 후 알림
 
 // 알림 큐 아이템 타입

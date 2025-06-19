@@ -28,7 +28,7 @@ export const fetchAvailableReservationTimes = async (
 ): Promise<string[]> => {
   if (!date || !restaurantId) return [];
 
-  const formattedDate = date.toISOString().split("T")[0];
+  const formattedDate = date.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' }).replace(/\//g, '-');
   const url = `/api/reservations/available-times?restaurantId=${restaurantId}&date=${formattedDate}`;
 
   const res = await api.get(url);
