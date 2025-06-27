@@ -14,7 +14,7 @@ export interface Post{
     content: string;
     restaurantName: string;
     restaurantAddress: string;
-    //tagNames: string[];
+    tagNames: string[];
     restaurantCategoryName?: string;
     memberNickname?: string;
     memberProfileImage?: string;

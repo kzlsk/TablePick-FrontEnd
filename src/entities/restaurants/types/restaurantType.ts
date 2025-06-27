@@ -5,6 +5,7 @@ export interface RestaurantLandingData {
   categoryName: string;
   restaurantTags: string[];
   imageUrl: string;
+  boardTags: string[]
 };
 
 export interface RestaurantListData {

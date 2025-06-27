@@ -9,6 +9,7 @@ import { fetchPosts } from '@/entities/post/api/fetchPosts';
 import { Post } from '@/entities/post/types/postType';
 import { fetchRestaurantsLanding } from '@/entities/restaurants/api/fetchRestaurants';
 import { RestaurantLandingData } from '@/entities/restaurants/types/restaurantType';
+import logo from '@/@shared/images/logo.png'
 
 // 레스토랑 카드 컴포넌트
 function RestaurantCard({
@@ -26,7 +27,7 @@ function RestaurantCard({
       {/* 이미지 컨테이너 */}
       <div className="w-full h-[250px] overflow-hidden">
         <img
-          src={item.imageUrl}
+          src={item.imageUrl || logo}
           alt={item.name}
           className="w-full h-full object-cover"
         />
@@ -38,11 +39,7 @@ function RestaurantCard({
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <span className="text-xl font-semibold truncate">{item.name}</span>
-            {item.categoryName && (
-              <span className="text-sm bg-main text-white px-2 py-0.5 rounded-full">
-                {item.categoryName}
-              </span>
-            )}
+            
           </div>
 
           {/* 주소 */}
@@ -59,10 +56,15 @@ function RestaurantCard({
         </div>
 
         {/* 태그 */}
-        {item.restaurantTags && item.restaurantTags.length > 0 && ( // item.restaurantTags가 존재하고 길이가 0보다 큰지 확인
-          <div className="mt-2 overflow-x-auto scrollbar-hide">
-            <div className="flex gap-2 w-max">
-              {item.restaurantTags.map((tag, index) => (
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-2 w-max">
+            {item.categoryName && (
+              <span className="text-sm bg-main text-white px-2 py-0.5 rounded-full whitespace-nowrap">
+                {item.categoryName}
+              </span>
+            )}
+            {item.boardTags?.length > 0 &&
+              item.boardTags.map((tag, index) => (
                 <span
                   key={index}
                   className="whitespace-nowrap bg-gray-200 text-primary text-sm px-2 py-0.5 rounded-full"
@@ -70,9 +72,9 @@ function RestaurantCard({
                   {tag}
                 </span>
               ))}
-            </div>
           </div>
-        )}
+        </div>
+
       </div>
     </div>
   );
@@ -88,7 +90,7 @@ function PostCard({ item, onClick }: { item: Post; onClick?: () => void }) {
       {/* 이미지 컨테이너 */}
       <div className="w-full h-[250px] overflow-hidden">
         <img
-          src={item.imageUrl}
+          src={item.imageUrl  || logo}
           alt={item.restaurantName}
           className="w-full h-full object-cover"
         />
@@ -100,11 +102,7 @@ function PostCard({ item, onClick }: { item: Post; onClick?: () => void }) {
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <span className="text-xl font-semibold truncate">{item.restaurantName}</span>
-            {item.restaurantCategoryName && (
-              <span className="text-sm bg-main text-white px-2 py-0.5 rounded-full">
-                {item.restaurantCategoryName}
-              </span>
-            )}
+            
           </div>
 
           {/* 내용 */}
@@ -112,7 +110,7 @@ function PostCard({ item, onClick }: { item: Post; onClick?: () => void }) {
             <img
               width={24}
               height={24}
-              src={content}
+              src={content || logo} 
               alt="location icon"
               className="w-4 h-4 mr-1"
             />
@@ -121,10 +119,15 @@ function PostCard({ item, onClick }: { item: Post; onClick?: () => void }) {
         </div>
 
         {/* 태그 */}
-        {/* {item.restaurantCategoryName.length > 0 && (
-          <div className="mt-2 overflow-x-auto scrollbar-hide">
-            <div className="flex gap-2 w-max">
-              {item.tagNames.map((tag, index) => (
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-2 w-max">
+            {item.restaurantCategoryName && (
+              <span className="text-sm bg-main text-white px-2 py-0.5 rounded-full whitespace-nowrap">
+                {item.restaurantCategoryName}
+              </span>
+            )}
+            {item.tagNames?.length > 0 &&
+              item.tagNames.map((tag, index) => (
                 <span
                   key={index}
                   className="whitespace-nowrap bg-gray-200 text-primary text-sm px-2 py-0.5 rounded-full"
@@ -132,9 +135,8 @@ function PostCard({ item, onClick }: { item: Post; onClick?: () => void }) {
                   {tag}
                 </span>
               ))}
-            </div>
           </div>
-        )} */}
+        </div>
       </div>
     </div>
   );

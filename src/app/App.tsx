@@ -11,9 +11,15 @@ export default function App() {
   const { user, isAuthenticated } = useAuth();
   const { mutateAsync: updateFcmtoken } = useFcmtokenUpdate();
   const [fcmToken, setFcmToken] = useState<string | null>(null);
+  const [fcmInitializationAttempted, setFcmInitializationAttempted] = useState(false); // 새로운 상태 추가
 
   const setupFCM = async () => {
+    if (!isAuthenticated) {
+      console.log('비로그인 상태: FCM 초기화 건너뜀');
+      return;
+    }
     console.log('FCM 설정 시작...');
+    setFcmInitializationAttempted(true); // FCM 초기화를 시도했음을 표시
 
     try {
       const messaging = await initializeFirebaseAppAndMessaging();
@@ -34,15 +40,16 @@ export default function App() {
       setFcmToken(token);
       console.log('FCM 토큰 생성 완료:', token);
 
-      // sessionStorage에서 userInfo.id 확인
+      // 사용자 정보가 있으면 즉시 토큰 저장 시도
       const userInfo = JSON.parse(sessionStorage.getItem('userInfo') || '{}');
-      const memberId = userInfo?.id || user?.id;
+      const memberId = (typeof user?.id === 'number' && user.id > 0) ? user.id :
+                     (typeof userInfo?.id === 'number' && userInfo.id > 0) ? userInfo.id : null;
 
-      if (memberId) {
+      if (memberId && token) { // memberId와 token이 모두 있을 때만 저장 시도
         await saveFCMToken(memberId, token, updateFcmtoken);
-        console.log('FCM 토큰 저장 완료:', { memberId });
+        console.log('FCM 토큰 저장 완료 (초기 시도):', { memberId });
       } else {
-        console.warn('사용자 ID 없음: 토큰 저장 건너뜀. 로그인 후 재시도 예정.');
+        console.warn('사용자 ID 또는 FCM 토큰 없음: 토큰 저장 건너뜀. 로그인/토큰 발급 후 재시도 예정.');
       }
 
       // 알림 리스너 설정
@@ -55,22 +62,33 @@ export default function App() {
   };
 
   useEffect(() => {
-    setupFCM();
-  }, []); // user.id 의존성 제거, 앱 시작 시 1회 실행
+    // 컴포넌트 마운트 시 한 번만 FCM 설정을 시도
+    if (isAuthenticated&&!fcmInitializationAttempted) { // 컴포넌트가 다시 렌더링될 때 여러 번 호출되는 것을 방지
+      setupFCM();
+    }
+  }, [isAuthenticated, fcmInitializationAttempted]); // 의존성 배열에서 user.id 제거
 
   // user.id 또는 sessionStorage.userInfo.id 변경 시 토큰 저장 재시도
   useEffect(() => {
-    const userInfo = JSON.parse(sessionStorage.getItem('userInfo') || '{}');
-    const memberId = userInfo?.id || user?.id;
+    if (!isAuthenticated) {
+      console.log('비로그인 상태: FCM 토큰 저장 건너뜀');
+      return;
+    }
 
+    const userInfo = JSON.parse(sessionStorage.getItem('userInfo') || '{}');
+    const memberId = typeof user?.id === 'number' && user.id > 0 ? user.id :
+                    typeof userInfo?.id === 'number' && userInfo.id > 0 ? userInfo.id : null
+
+    // fcmToken과 memberId가 모두 있을 때만 저장 시도
     if (fcmToken && memberId) {
       saveFCMToken(memberId, fcmToken, updateFcmtoken)
         .then(() => console.log('FCM 토큰 저장 완료 (재시도):', { memberId }))
         .catch((error) => console.error('FCM 토큰 저장 실패 (재시도):', error));
+    } else {
+      console.log('FCM 토큰 저장 재시도 건너뜀: FCM 토큰 또는 memberId 없음', { fcmToken, memberId });
     }
-  }, [user?.id, fcmToken, updateFcmtoken]);
+  }, [user?.id, fcmToken, updateFcmtoken, isAuthenticated]); // fcmInitializationAttempted를 의존성에서 제거
 
-  
   return (
     <div className="relative w-full min-h-screen flex justify-center bg-white">
       {/* 실제 콘텐츠 영역 */}

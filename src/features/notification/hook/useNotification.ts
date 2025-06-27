@@ -3,14 +3,21 @@ import { initializeFirebaseAppAndMessaging, getFCMToken, saveFCMToken } from '@/
 import { fetchFcmtokenUpdate } from '@/features/auth/api/fetchFcmtoken';
 import { initializeNotificationTypeMap } from '@/features/notification/api/fetchNotification';
 import { Messaging } from 'firebase/messaging';
+import useAuth from '@/features/auth/hook/useAuth';
 
 export const useNotification = () => {
+  const { isAuthenticated, user } = useAuth();
   const [fcmInitialized, setFcmInitialized] = useState(false);
   const [notificationInitialized, setNotificationInitialized] = useState(false);
   const [messaging, setMessaging] = useState<Messaging | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isAuthenticated || !user?.id) {
+      console.log('비로그인 상태: 알림 초기화 건너뜀');
+      setError('로그인이 필요합니다.');
+      return;
+    }
     const init = async () => {
       try {
         // FCM 초기화
@@ -52,7 +59,7 @@ export const useNotification = () => {
       }
     };
     init();
-  }, []);
+  }, [isAuthenticated, user]);
 
   return { fcmInitialized, notificationInitialized, messaging, error };
 };

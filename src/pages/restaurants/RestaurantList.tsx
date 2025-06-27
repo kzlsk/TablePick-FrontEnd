@@ -50,10 +50,13 @@ export default function RestaurantList() {
         );
 
         setRestaurantList((prev) => {
-          const existingIds = new Set(prev.map((item) => item.id));
-          const newItems = converted.filter((item) => !existingIds.has(item.id));
-          console.log("Adding items:", newItems);
-          return isInitialLoad ? newItems : [...prev, ...newItems];
+          if (isInitialLoad) {
+            return converted;
+          } else {
+            const existingIds = new Set(prev.map((item) => item.id));
+            const newItems = converted.filter((item) => !existingIds.has(item.id));
+            return [...prev, ...newItems];
+          }
         });
         setHasMore(fetchPage < fetchedTotalPages - 1);
       } catch (error) {
@@ -84,7 +87,7 @@ export default function RestaurantList() {
   }, [page, fetchData]);
 
   const sentinelRef = useIntersectionObserver(
-    () => {
+    useCallback(() => { // onIntersect 콜백을 useCallback으로 감싸서 최적화
       if (!loading && hasMore && !isFetching.current) {
         console.log("Intersection Observer triggered, incrementing page");
         setPage((p) => {
@@ -93,9 +96,9 @@ export default function RestaurantList() {
           return nextPage;
         });
       }
-    },
+    }, [loading, hasMore]) // 종속성 배열에 loading과 hasMore 추가
   );
-
+  
   const { currentKeyword, currentTagIds } = getCurrentSearchParams();
 
   const displayedTagElements = currentTagIds.map((tagId) => {

@@ -148,8 +148,16 @@ export default function Mypage() {
 	};
 
   const handleSave = async () => {
+    if (!formData.nickname) {
+      alert('닉네임은 필수 입력 항목입니다.');
+      return;
+    }
     if (!isValidPhoneNumber(formData.phoneNumber || '')) {
       alert('전화번호는 010-XXXX-XXXX 형식이어야 합니다.');
+      return;
+    }
+    if (!formData.gender) {
+      alert('성별을 선택해주세요.');
       return;
     }
   const convertedGender = formData.gender
@@ -161,12 +169,13 @@ export default function Mypage() {
     gender: convertedGender,
     birthdate: formData.birthdate || '', // 기본값으로 빈 문자열
     phoneNumber: formData.phoneNumber || '', // 기본값으로 빈 문자열
-    profileImage: formData.profileImage || defaultProfile,
     memberTags: formData.memberTags || [], // 기본값으로 빈 배열
-  };
+    };
+    console.log('서버로 전송할 페이로드:', memberFormData); // 페이로드 로깅
 
 		try {
       const updatedData = await fetchUpdatedMemberInfo(memberFormData);
+      console.log('서버 응답:', updatedData);
       
       const updatedMemberTags = updatedData?.data?.memberTags
       ? updatedData.data.memberTags.map((tag: any) => tag.id)
@@ -193,9 +202,13 @@ export default function Mypage() {
 			
 			setInitialFormData(formData);
 			alert('정보 저장 완료');
-		} catch (error) {
-			console.error('유저 정보 저장 실패 :', error);
-			alert('정보 저장 실패');
+    } catch (error: any) {
+      console.error('유저 정보 저장 실패:', {
+      error: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+			alert(`정보 저장 실패: ${error.response?.data?.message || '서버 오류'}`);
 		}
   };
 

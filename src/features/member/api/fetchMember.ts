@@ -12,7 +12,6 @@ export const fetchUpdatedMemberInfo = async (formData: MemberFormData) => {
     gender: formData.gender?.toUpperCase() || '',
     birthdate: formData.birthdate,
     phoneNumber: formData.phoneNumber,
-    profileImage: formData.profileImage,
     memberTags: formData.memberTags,
   };
     const response = await api.patch('/api/members', requestBody);

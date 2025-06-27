@@ -9,41 +9,37 @@ let notificationDetails: Record<NotificationTypes, { title: string; body: string
 
 export const initializeNotificationTypeMap = async () => {
   try {
-    const { status, data } = await fetchNotificationTypes();
-    console.log('fetchNotificationTypes 응답:', { status, data });
-
-    if (status >= 200 && status < 300) {
-      if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
-        console.error('인증 오류: 로그인 페이지 HTML 응답 수신:', data.slice(0, 100));
-        throw new Error('인증되지 않은 요청입니다. 로그인이 필요합니다.');
-      }
-
-      if (!Array.isArray(data)) {
-        console.error('알림 타입 데이터가 배열이 아님:', data);
-        throw new Error('알림 타입 데이터가 배열 형식이 아닙니다.');
-      }
-
-      notificationTypeMap = data.reduce((map: Record<NotificationTypes, number>, item: { id: number; type: NotificationTypes }) => {
-        map[item.type] = item.id;
-        return map;
-      }, {} as Record<NotificationTypes, number>);
-
-      notificationDetails = data.reduce((details: Record<NotificationTypes, { title: string; body: string; url: string }>, item: { type: NotificationTypes; title: string; body: string; url: string }) => {
-        details[item.type] = { title: item.title, body: item.body, url: item.url };
-        return details;
-      }, {} as Record<NotificationTypes, { title: string; body: string; url: string }>);
-
-      console.log('notificationTypeMap 초기화 완료:', notificationTypeMap);
-      console.log('notificationDetails 초기화 완료:', notificationDetails);
-    } else {
-      console.error('알림 타입 조회 실패:', { status, data });
-      throw new Error(`알림 타입 조회 실패: HTTP ${status}`);
+    console.log('알림 타입 조회 요청');
+    const response = await api.get('/api/notifications/notification-types');
+    const types = response.data;
+    if (!Array.isArray(types)) {
+      console.error('알림 타입 응답이 배열이 아님:', types);
+      throw new Error('서버 응답이 예상된 배열 형식이 아닙니다.');
     }
-  } catch (error) {
-    console.error('알림 타입 조회 오류:', error);
+    notificationTypeMap = types.reduce((map: { [key: string]: number }, type: { id: number; type: string }) => {
+      map[type.type] = type.id;
+      return map;
+    }, {});
+    console.log('알림 타입 초기화 성공:', notificationTypeMap);
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      console.error('인증 오류: 로그인 필요', error.response?.data || error.message);
+      throw new Error('인증되지 않은 요청입니다. 로그인이 필요합니다.');
+    }
+    if (error.response?.status === 404) {
+      console.error('알림 타입 엔드포인트 not found:', error.response?.data || error.message);
+      throw new Error('알림 타입 엔드포인트를 찾을 수 없습니다.');
+    }
+    if (typeof error.response?.data === 'string' && error.response.data.startsWith('<!DOCTYPE html>')) {
+      console.error('인증 오류: 로그인 페이지 HTML 응답 수신:', error.response.data.substring(0, 50));
+      throw new Error('인증되지 않은 요청입니다. 로그인이 필요합니다.');
+    }
+    console.error('알림 타입 조회 오류:', error.message, error);
     throw error;
   }
 };
+
+export const getNotificationTypeMap = () => notificationTypeMap;
 
 export const useNotificationTypeMapInitializer = () => {
   const [initialized, setInitialized] = useState(false);
@@ -94,22 +90,11 @@ export const fetchNotificationSchedule = async (
   const payload = {
     memberId,
     notificationTypeId: notificationTypeMap[notificationType],
+    reservationId: extraData?.reservationId,
     scheduledAt: new Date().toISOString(),
-    notification: {
-      title: notificationDetails[notificationType]?.title || `${notificationType} 알림`,
-      body: notificationDetails[notificationType]?.body || `${notificationType}이 완료되었습니다.`,
-    },
-    data: {
-      title: notificationDetails[notificationType]?.title || `${notificationType} 알림`,
-      body: notificationDetails[notificationType]?.body || `${notificationType}이 완료되었습니다.`,
-      url: notificationDetails[notificationType]?.url || '/profile',
-      ...(extraData?.reservationId && { reservationId: extraData.reservationId.toString() }),
-      ...(extraData?.restaurantName && { restaurantName: extraData.restaurantName }),
-      memberId: memberId.toString(),
-      type: notificationType,
-    },
-    collapseKey: `${notificationType}_${memberId}`, // 중복 방지용 collapseKey
   };
+
+  console.log('알림 스케줄링 페이로드:', JSON.stringify(payload, null, 2));
 
   try {
     const response = await api.post(`/api/notifications/schedule`, payload);
