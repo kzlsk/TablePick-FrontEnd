@@ -3,18 +3,18 @@ export interface RestaurantLandingData {
   name: string;
   address: string;
   categoryName: string;
-  restaurantTags: string[];
+  tagNames: string[];
   imageUrl: string;
-  boardTags: string[]
-};
+  boardTags: string[];
+}
 
 export interface RestaurantListData {
   id: number;
   name: string;
   address: string;
   restaurantPhoneNumber: string;
-  restaurantCategory: string | { id: number; name: string }; 
-  restaurantImage: string | null; 
+  restaurantCategory: string | { id: number; name: string };
+  restaurantImage: string | null;
   restaurantTags: string[] | null;
 }
 
@@ -38,4 +38,4 @@ export interface RestaurantDetailData {
   menus: { name: string; price: number }[];
   xcoordinate: number;
   ycoordinate: number;
-};
+}
