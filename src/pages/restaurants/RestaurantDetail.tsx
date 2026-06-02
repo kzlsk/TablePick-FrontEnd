@@ -15,7 +15,10 @@ type RestaurantReviewPost = {
   imageUrl: string;
 };
 
-class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
   state = { hasError: false };
 
   static getDerivedStateFromError() {
@@ -24,7 +27,11 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 
   render() {
     if (this.state.hasError) {
-      return <p className="text-center text-red-500">오류가 발생했습니다. 다시 시도해주세요.</p>;
+      return (
+        <p className="text-center text-red-500">
+          오류가 발생했습니다. 다시 시도해주세요.
+        </p>
+      );
     }
     return this.props.children;
   }
@@ -35,8 +42,16 @@ export default function RestaurantDetail() {
   const navigate = useNavigate();
   const [data, setData] = useState<RestaurantDetailData | null>(null);
   const [reviewPosts, setReviewPosts] = useState<RestaurantReviewPost[]>([]);
-  const { isOpen: isReservationOpen, openModal: openReservationModal, closeModal: closeReservationModal } = useModal({ initialState: false });
-  const { isOpen: isLoginOpen, openModal: openLoginModal, closeModal: closeLoginModal } = useModal({ initialState: false });
+  const {
+    isOpen: isReservationOpen,
+    openModal: openReservationModal,
+    closeModal: closeReservationModal,
+  } = useModal({ initialState: false });
+  const {
+    isOpen: isLoginOpen,
+    openModal: openLoginModal,
+    closeModal: closeLoginModal,
+  } = useModal({ initialState: false });
   const { isAuthenticated } = useAuth();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<kakao.maps.Map | null>(null);
@@ -44,26 +59,51 @@ export default function RestaurantDetail() {
   const [mapError, setMapError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!mapRef.current || !data) return;
-    let map: kakao.maps.Map | null = null;
+    const mapContainer = mapRef.current;
+    if (!mapContainer || !data) return;
+
     loadKakaoMapScript()
       .then(() => {
-        const { xcoordinate: lng, ycoordinate: lat } = data;
-        if (isNaN(lat) || isNaN(lng) || lat < 33 || lat > 39 || lng < 124 || lng > 132) {
-          setMapError("유효하지 않은 좌표입니다.");
-          return;
+        try {
+          const { xcoordinate: lng, ycoordinate: lat } = data;
+          if (
+            isNaN(lat) ||
+            isNaN(lng) ||
+            lat < 33 ||
+            lat > 39 ||
+            lng < 124 ||
+            lng > 132
+          ) {
+            setMapError("유효하지 않은 좌표입니다.");
+            return;
+          }
+
+          const center = new window.kakao.maps.LatLng(lat, lng);
+          const mapOption = { center, level: 5 };
+
+          const map = new window.kakao.maps.Map(mapContainer, mapOption);
+          new window.kakao.maps.Marker({ position: center, map });
+
+          mapInstance.current = map;
+          setIsMapLoaded(true);
+          setMapError(null);
+
+          setTimeout(() => {
+            if (map) {
+              map.relayout();
+              map.setCenter(center);
+            }
+          }, 50);
+        } catch (error) {
+          console.error("카카오 맵 객체 생성 실패:", error);
+          setMapError("지도를 불러오지 못했습니다.");
         }
-        const center = new window.kakao.maps.LatLng(lat, lng);
-        const mapOption = { center, level: 5 };
-        map = new window.kakao.maps.Map(mapRef.current!, mapOption);
-        new window.kakao.maps.Marker({ position: center, map });
-        mapInstance.current = map;
-        setIsMapLoaded(true);
       })
       .catch((error) => {
         console.error(error);
         setMapError("지도를 불러오지 못했습니다.");
       });
+
     return () => {
       mapInstance.current = null;
     };
@@ -81,13 +121,19 @@ export default function RestaurantDetail() {
     const loadRestaurant = async () => {
       try {
         const restaurantData = await fetchRestaurantDetail(restaurantId);
-        console.log("Fetched restaurant data:", restaurantData);
+
         if (!restaurantData.restaurantImage) {
-          console.warn("restaurantImage is null for restaurant ID:", restaurantId);
+          console.warn(
+            "restaurantImage is null for restaurant ID:",
+            restaurantId,
+          );
         }
         setData(restaurantData);
       } catch (e: any) {
-        console.error("식당 데이터를 불러오지 못했습니다", e?.response?.data ?? e);
+        console.error(
+          "식당 데이터를 불러오지 못했습니다",
+          e?.response?.data ?? e,
+        );
         setData(null);
       }
     };
@@ -124,31 +170,35 @@ export default function RestaurantDetail() {
     );
   }
 
-  const imageUrl = typeof data.restaurantImage === 'string' ?
-    data.restaurantImage : data.restaurantImage?.imageUrl ?? defaultImg;
+  const imageUrl =
+    typeof data.restaurantImage === "string"
+      ? data.restaurantImage
+      : (data.restaurantImage?.imageUrl ?? defaultImg);
 
   return (
     <ErrorBoundary>
       <div className="min-h-screen">
-        <div className="max-w-7xl mx-auto p-3 lg:p-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2 space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-3 mx-auto max-w-7xl lg:p-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="space-y-3 lg:col-span-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
                   <img
                     src={imageUrl}
                     alt={data.name}
-                    className="w-full h-full object-cover"
+                    className="object-cover w-full h-full"
                   />
                 </div>
                 <div className="bg-white rounded-lg border border-gray-200 aspect-[4/3] flex flex-col justify-between">
-                  <div className="p-4 flex flex-col gap-4">
+                  <div className="flex flex-col gap-4 p-4">
                     <div className="flex flex-col gap-2">
                       <span className="w-fit text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
                         {data.restaurantCategory.name}
                       </span>
-                      <h1 className="text-2xl font-bold text-gray-900">{data.name}</h1>
-                      <div className="flex flex-col gap-1 text-gray-600 text-sm">
+                      <h1 className="text-2xl font-bold text-gray-900">
+                        {data.name}
+                      </h1>
+                      <div className="flex flex-col gap-1 text-sm text-gray-600">
                         <div className="flex items-center gap-2">
                           <span>📍</span>
                           <span>{data.address}</span>
@@ -173,22 +223,22 @@ export default function RestaurantDetail() {
                   <div className="p-4">
                     <button
                       onClick={handleReservationClick}
-                      className="w-full py-3 text-base font-semibold bg-main text-white rounded-lg shadow-md"
+                      className="w-full py-3 text-base font-semibold text-white rounded-lg shadow-md bg-main"
                     >
                       예약하기
                     </button>
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-lg border border-gray-200">
-                <div className="p-4 pb-2 flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <div className="bg-white border border-gray-200 rounded-lg">
+                <div className="flex items-center justify-between p-4 pb-2">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
                     <span>👥</span>
                     방문자 평가
                   </h3>
                   <button
                     onClick={() => navigate(`/posts?restaurantId=${id}`)}
-                    className="text-orange-600 hover:text-orange-700 text-sm p-2 flex items-center gap-1"
+                    className="flex items-center gap-1 p-2 text-sm text-orange-600 hover:text-orange-700"
                   >
                     게시글 보기 <span>→</span>
                   </button>
@@ -198,12 +248,12 @@ export default function RestaurantDetail() {
                     {reviewPosts.map((p) => (
                       <div
                         key={p.boardId}
-                        className="relative aspect-square rounded-lg overflow-hidden cursor-pointer"
+                        className="relative overflow-hidden rounded-lg cursor-pointer aspect-square"
                       >
                         <img
                           src={p.imageUrl || "/placeholder.svg"}
                           alt={`리뷰 ${p.boardId}`}
-                          className="w-full h-full object-cover hover:scale-105 transition-transform"
+                          className="object-cover w-full h-full transition-transform hover:scale-105"
                         />
                       </div>
                     ))}
@@ -212,16 +262,22 @@ export default function RestaurantDetail() {
               </div>
             </div>
             <div className="space-y-3">
-              <div className="bg-white rounded-lg border border-gray-200">
+              <div className="bg-white border border-gray-200 rounded-lg">
                 <div className="p-4 pb-2">
-                  <span className="text-sm font-semibold text-gray-700">{data.address}</span>
+                  <span className="text-sm font-semibold text-gray-700">
+                    {data.address}
+                  </span>
                 </div>
                 <div className="px-4 pb-4">
                   <div
                     id="map"
                     ref={mapRef}
-                    className="w-full h-48 rounded-lg relative"
-                    style={{ backgroundColor: "#e5e7eb", minHeight: 192 }}
+                    className="relative w-full h-48 rounded-lg"
+                    style={{
+                      width: "100%",
+                      height: "200px",
+                      backgroundColor: "#e5e7eb",
+                    }}
                   >
                     {!isMapLoaded && !mapError && (
                       <div className="absolute inset-0 flex items-center justify-center text-gray-500">
@@ -229,61 +285,80 @@ export default function RestaurantDetail() {
                       </div>
                     )}
                     {mapError && (
-                      <div className="absolute inset-0 flex items-center justify-center text-red-500 text-sm">
+                      <div className="absolute inset-0 flex items-center justify-center text-sm text-red-500">
                         {mapError}
                       </div>
                     )}
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-lg border border-gray-200">
+              <div className="bg-white border border-gray-200 rounded-lg">
                 <div className="p-4 pb-2">
-                  <h4 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                  <h4 className="flex items-center gap-2 text-base font-semibold text-gray-900">
                     <span>🕐</span>
                     영업시간
                   </h4>
                 </div>
                 <div className="px-4 pb-4 space-y-1">
                   {data.restaurantOperatingHours.map((h, i) => (
-                    <div key={i} className="flex justify-between items-center text-xs">
+                    <div
+                      key={i}
+                      className="flex items-center justify-between text-xs"
+                    >
                       <span className="font-medium">{h.dayOfWeek}</span>
-                      <span className={h.holiday ? "text-red-500" : "text-gray-600"}>
-                        {h.holiday ? "휴무" : `${h.openTime || "미지정"} - ${h.closeTime || "미지정"}`}
+                      <span
+                        className={h.holiday ? "text-red-500" : "text-gray-600"}
+                      >
+                        {h.holiday
+                          ? "휴무"
+                          : `${h.openTime || "미지정"} - ${h.closeTime || "미지정"}`}
                       </span>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="bg-white rounded-lg border border-gray-200">
+              <div className="bg-white border border-gray-200 rounded-lg">
                 <div className="p-4 pb-2">
-                  <h4 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                  <h4 className="flex items-center gap-2 text-base font-semibold text-gray-900">
                     <span>🍽️</span>
                     메뉴
                   </h4>
                 </div>
                 <div className="px-4 pb-4 space-y-1">
                   {data.menus?.map((m, i) => (
-                    <div key={i} className="flex justify-between items-center text-xs">
+                    <div
+                      key={i}
+                      className="flex items-center justify-between text-xs"
+                    >
                       <span className="font-medium">{m.name}</span>
-                      <span className="font-semibold text-orange-600">{m.price.toLocaleString()}원</span>
+                      <span className="font-semibold text-orange-600">
+                        {m.price.toLocaleString()}원
+                      </span>
                     </div>
                   )) || <p className="text-gray-600">메뉴 정보가 없습니다.</p>}
                 </div>
               </div>
             </div>
           </div>
-          <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-lg z-20">
+          <div className="fixed bottom-0 left-0 right-0 z-20 p-4 bg-white border-t shadow-lg lg:hidden">
             <button
               onClick={handleReservationClick}
-              className="w-full py-3 text-lg font-semibold bg-orange-600 hover:bg-orange-700 text-white rounded-lg shadow-md transition-colors"
+              className="w-full py-3 text-lg font-semibold text-white transition-colors bg-orange-600 rounded-lg shadow-md hover:bg-orange-700"
             >
               예약하기
             </button>
           </div>
-          <div className="lg:hidden h-20" />
+          <div className="h-20 lg:hidden" />
         </div>
-        {isReservationOpen && <ReservationModal closeModal={closeReservationModal} restaurantId={Number(id)} />}
-        {isLoginOpen && <LoginModal isOpen={isLoginOpen} onClose={closeLoginModal} />}
+        {isReservationOpen && (
+          <ReservationModal
+            closeModal={closeReservationModal}
+            restaurantId={Number(id)}
+          />
+        )}
+        {isLoginOpen && (
+          <LoginModal isOpen={isLoginOpen} onClose={closeLoginModal} />
+        )}
       </div>
     </ErrorBoundary>
   );
