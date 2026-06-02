@@ -110,10 +110,14 @@ export const fetchPostDetail = async (id: string): Promise<PostData> => {
     }
   }
 
-  const firstImage =
-    data.board_images && data.board_images.length > 0
-      ? data.board_images[0].image_url
-      : null;
+  const images = data.board_images
+    ? (Array.isArray(data.board_images)
+        ? data.board_images
+        : [data.board_images]
+      )
+        .map((img: any) => img.image_url)
+        .filter(Boolean)
+    : [];
 
   const rawBoardTags = (data as any).board_tags;
   const tags = rawBoardTags
@@ -129,7 +133,7 @@ export const fetchPostDetail = async (id: string): Promise<PostData> => {
     restaurantCategoryName: categoryObj,
     memberNickname: memberObj?.nickname || "익명유저",
     memberProfileImage: memberObj?.profile_image || null,
-    imageUrls: firstImage,
+    imageUrls: images,
     tagNames: tags,
   };
 };
@@ -141,13 +145,14 @@ export const fetchPosts = async ({
   size = 6,
 }: FetchPostsParams): Promise<FetchPostResponse> => {
   try {
-    // 🛡️ [1차 가드] 해당 쿼리의 총 카운트를 먼저 따서 오프셋 바운더리를 확인합니다.
     let countQuery = supabase
       .from("boards")
       .select("id", { count: "exact", head: true });
-    if (restaurantId) {
+
+    if (restaurantId && !isNaN(Number(restaurantId))) {
       countQuery = countQuery.eq("restaurant_id", Number(restaurantId));
     }
+
     const { count } = await countQuery;
     const totalCount = count || 0;
     const totalPages = Math.ceil(totalCount / size) || 1;
@@ -155,24 +160,23 @@ export const fetchPosts = async ({
     const from = page * size;
     const to = from + size - 1;
 
-    // 🛡️ [2차 가드] 프론트엔드가 요청한 범위가 데이터 총 개수보다 크면 빈 배열로 조기 안전 조치
     if (from >= totalCount || totalCount === 0) {
       return { data: [], totalPages };
     }
 
-    // 🔗 select 쿼리에 board_tags(tags(name)) 완벽 동기화 추가
     let query = supabase.from("boards").select(`
       id,
       content,
       created_at,
       updated_at,
+      restaurant_id,
       restaurants (name, address, categories (name)),
       members (nickname, profile_image),
       board_images (image_url),
       board_tags (tags (name))
     `);
 
-    if (restaurantId) {
+    if (restaurantId && !isNaN(Number(restaurantId))) {
       query = query.eq("restaurant_id", Number(restaurantId));
     }
 
@@ -192,18 +196,28 @@ export const fetchPosts = async ({
 
       let categoryName = "기타";
       if (restaurantObj && restaurantObj.categories) {
-        const rawCategory = Array.isArray(restaurantObj.categories)
-          ? restaurantObj.categories[0]
-          : restaurantObj.categories;
-        if (rawCategory) {
-          categoryName = (rawCategory as any).name || "기타";
+        let targetCategory = restaurantObj.categories;
+
+        while (Array.isArray(targetCategory) && targetCategory.length > 0) {
+          targetCategory = targetCategory[0];
+        }
+
+        if (targetCategory && typeof targetCategory === "object") {
+          categoryName = (targetCategory as any).name || "기타";
         }
       }
 
-      const firstImage =
-        board.board_images && board.board_images.length > 0
-          ? board.board_images[0].image_url
-          : null;
+      let firstImage = null;
+      if (board.board_images) {
+        if (
+          Array.isArray(board.board_images) &&
+          board.board_images.length > 0
+        ) {
+          firstImage = board.board_images[0].image_url;
+        } else if ((board.board_images as any).image_url) {
+          firstImage = (board.board_images as any).image_url;
+        }
+      }
 
       const rawBoardTags = (board as any).board_tags;
       const tags = rawBoardTags
@@ -220,7 +234,7 @@ export const fetchPosts = async ({
         restaurantCategoryName: categoryName,
         memberNickname: memberObj?.nickname || "익명유저",
         memberProfileImage: memberObj?.profile_image || null,
-        imageUrls: firstImage,
+        imageUrl: firstImage,
         tagNames: tags,
       };
     });
