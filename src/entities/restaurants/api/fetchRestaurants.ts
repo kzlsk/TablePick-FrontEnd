@@ -28,7 +28,7 @@ export const fetchRestaurantsLanding = async (): Promise<
     return [];
   }
 
-  return (data || []).map((item: any) => {
+  const processedData = (data || []).map((item: any) => {
     const categoryObj = Array.isArray(item.categories)
       ? item.categories[0]
       : item.categories;
@@ -42,11 +42,13 @@ export const fetchRestaurantsLanding = async (): Promise<
       name: item.name,
       address: item.address,
       categoryName: categoryObj?.name || "기타",
-      restaurantTags: tags,
+      tagNames: tags,
       imageUrl: item.restaurant_image || "",
       boardTags: [],
     };
   });
+
+  return processedData;
 };
 
 // 식당 검색 및 필터링 페이지네이션 조회
@@ -56,7 +58,7 @@ export const fetchRestaurantsList = async (
   tagIds: number[] = [],
   sort: string = "",
 ): Promise<{ restaurants: RestaurantListData[]; totalPages: number }> => {
-  const PAGE_SIZE = 6;
+  const PAGE_SIZE = 9;
   const from = currentPage * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
@@ -159,6 +161,7 @@ export const fetchRestaurantDetail = async (id: string | number) => {
         categories (name),
         restaurant_operating_hours (*),
         menus (*),
+        restaurant_tags (tags (name)),
         boards (
           id,
           content,
@@ -183,13 +186,23 @@ export const fetchRestaurantDetail = async (id: string | number) => {
       processedRestaurantImage = { imageUrl: data.restaurant_image };
     }
 
+    const tags = data.restaurant_tags
+      ? data.restaurant_tags
+          .map((rt: any) => {
+            if (!rt.tags) return null;
+            return Array.isArray(rt.tags) ? rt.tags[0]?.name : rt.tags.name;
+          })
+          .filter(Boolean)
+      : [];
+
     return {
       id: data.id,
       name: data.name,
       address: data.address,
       restaurantPhoneNumber: data.restaurant_phone_number,
       restaurantImage: processedRestaurantImage,
-      restaurantCategory: data.categories?.name || "기타",
+      restaurantCategory: data.categories || { name: "기타" },
+      restaurantTags: tags,
       xcoordinate: data.xcoordinate,
       ycoordinate: data.ycoordinate,
       restaurantOperatingHours: data.restaurant_operating_hours || [],

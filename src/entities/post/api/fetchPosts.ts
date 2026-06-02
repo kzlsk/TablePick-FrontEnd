@@ -142,7 +142,7 @@ export const fetchPostDetail = async (id: string): Promise<PostData> => {
 export const fetchPosts = async ({
   restaurantId,
   page = 0,
-  size = 6,
+  size = 9,
 }: FetchPostsParams): Promise<FetchPostResponse> => {
   try {
     let countQuery = supabase
