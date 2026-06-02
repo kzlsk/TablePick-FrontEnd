@@ -47,17 +47,32 @@ export default function RestaurantList() {
       try {
         const { restaurants, totalPages: fetchedTotalPages } =
           await fetchRestaurantsList(fetchPage, keyword, tagIds);
-        console.log("Fetched restaurants:", restaurants);
-        console.log("Total pages:", fetchedTotalPages);
+
         const converted: CardItemProps[] = restaurants.map(
-          (item: RestaurantListData): CardItemProps => ({
-            id: item.id,
-            image: item.restaurantImage || defaultImg,
-            restaurantName: item.name,
-            description: item.address,
-            tags: item.restaurantTags || [],
-            linkTo: `/restaurants/${item.id}`,
-          }),
+          (item: RestaurantListData): any => {
+            let categoryName = "기타";
+            if (item.restaurantCategory) {
+              if (typeof item.restaurantCategory === "string") {
+                categoryName = item.restaurantCategory;
+              } else if (item.restaurantCategory.name) {
+                categoryName = item.restaurantCategory.name;
+              }
+            }
+
+            const combinedTags: string[] = [
+              categoryName,
+              ...(item.restaurantTags || []),
+            ];
+
+            return {
+              id: item.id,
+              image: item.restaurantImage || defaultImg,
+              restaurantName: item.name,
+              description: item.address,
+              tags: combinedTags,
+              linkTo: `/restaurants/${item.id}`,
+            };
+          },
         );
 
         setRestaurantList((prev) => {
