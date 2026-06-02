@@ -300,21 +300,39 @@ export default function RestaurantDetail() {
                   </h4>
                 </div>
                 <div className="px-4 pb-4 space-y-1">
-                  {data.restaurantOperatingHours.map((h, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between text-xs"
-                    >
-                      <span className="font-medium">{h.dayOfWeek}</span>
-                      <span
-                        className={h.holiday ? "text-red-500" : "text-gray-600"}
+                  {data.restaurantOperatingHours.map((h: any, i) => {
+                    const rawOpen = h.open_time || h.openTime;
+                    const rawClose = h.close_time || h.closeTime;
+
+                    const openTimeFormated = rawOpen
+                      ? rawOpen.slice(0, 5)
+                      : "미지정";
+                    const closeTimeFormated = rawClose
+                      ? rawClose.slice(0, 5)
+                      : "미지정";
+
+                    return (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between text-xs"
                       >
-                        {h.holiday
-                          ? "휴무"
-                          : `${h.openTime || "미지정"} - ${h.closeTime || "미지정"}`}
-                      </span>
-                    </div>
-                  ))}
+                        <span className="font-semibold text-gray-900">
+                          {h.day_of_week || h.dayOfWeek}
+                        </span>
+                        <span
+                          className={
+                            h.holiday
+                              ? "text-red-500 font-bold"
+                              : "text-gray-500 font-semibold"
+                          }
+                        >
+                          {h.holiday
+                            ? "휴무"
+                            : `${openTimeFormated} - ${closeTimeFormated}`}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
               <div className="bg-white border border-gray-200 rounded-lg">
