@@ -7,6 +7,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import useAuth from "@/features/auth/hook/useAuth";
 import SearchModal from "@/features/search/components/SearchModal";
 import defaultProfile from "@/@shared/images/user.png";
+import { fetchLogout } from "@/features/member/api/fetchMember";
 
 export default function AuthHeader() {
   const navigate = useNavigate();
@@ -21,9 +22,15 @@ export default function AuthHeader() {
   };
 
   const handleLogout = async () => {
-    if (!user?.id || !isAuthenticated) {
-      logout();
-      return;
+    if (!window.confirm("정말 로그아웃 하시겠습니까?")) return;
+
+    try {
+      await fetchLogout();
+
+      if (logout) logout();
+    } catch (error) {
+      console.error("헤더 로그아웃 핸들러 예외 발생:", error);
+      alert("로그아웃 처리 중 오류가 발생했습니다. 다시 시도해 주세요.");
     }
   };
 

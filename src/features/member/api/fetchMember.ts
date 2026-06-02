@@ -90,10 +90,21 @@ export const fetchUpdatedMemberInfo = async (
 
 // 로그아웃 처리
 export const fetchLogout = async () => {
-  const { error } = await supabase.auth.signOut();
+  try {
+    const { error } = await supabase.auth.signOut();
 
-  if (error) {
-    console.error("Supabase 로그아웃 실패 : ", error);
+    if (error) {
+      console.error("Supabase 로그아웃 실패 : ", error);
+      throw error;
+    }
+
+    sessionStorage.removeItem("userInfo");
+    sessionStorage.clear();
+    localStorage.removeItem("sb-rxefrilzdbvbuqiosufc-auth-token");
+
+    window.location.href = "/";
+  } catch (error) {
+    console.error("로그아웃 프로세스 치명적 오류 : ", error);
     throw error;
   }
 };
