@@ -23,7 +23,11 @@ export default function RestaurantList() {
   const getCurrentSearchParams = () => {
     const currentKeyword = searchParams.get("keyword") || "";
     const currentTagIds = searchParams.get("tagIds")
-      ? searchParams.get("tagIds")?.split(",").map(Number).filter((id) => !isNaN(id)) || []
+      ? searchParams
+          .get("tagIds")
+          ?.split(",")
+          .map(Number)
+          .filter((id) => !isNaN(id)) || []
       : [];
     return { currentKeyword, currentTagIds };
   };
@@ -31,12 +35,18 @@ export default function RestaurantList() {
   const isFetching = useRef(false);
 
   const fetchData = useCallback(
-    async (fetchPage: number, keyword: string, tagIds: number[], isInitialLoad: boolean) => {
+    async (
+      fetchPage: number,
+      keyword: string,
+      tagIds: number[],
+      isInitialLoad: boolean,
+    ) => {
       if (isFetching.current) return;
       isFetching.current = true;
       setLoading(true);
       try {
-        const { restaurants, totalPages: fetchedTotalPages } = await fetchRestaurantsList(fetchPage, keyword, tagIds);
+        const { restaurants, totalPages: fetchedTotalPages } =
+          await fetchRestaurantsList(fetchPage, keyword, tagIds);
         console.log("Fetched restaurants:", restaurants);
         console.log("Total pages:", fetchedTotalPages);
         const converted: CardItemProps[] = restaurants.map(
@@ -47,7 +57,7 @@ export default function RestaurantList() {
             description: item.address,
             tags: item.restaurantTags || [],
             linkTo: `/restaurants/${item.id}`,
-          })
+          }),
         );
 
         setRestaurantList((prev) => {
@@ -55,7 +65,9 @@ export default function RestaurantList() {
             return converted;
           } else {
             const existingIds = new Set(prev.map((item) => item.id));
-            const newItems = converted.filter((item) => !existingIds.has(item.id));
+            const newItems = converted.filter(
+              (item) => !existingIds.has(item.id),
+            );
             return [...prev, ...newItems];
           }
         });
@@ -68,7 +80,7 @@ export default function RestaurantList() {
         setLoading(false);
       }
     },
-    []
+    [],
   );
 
   useEffect(() => {
@@ -90,53 +102,56 @@ export default function RestaurantList() {
   }, [page, fetchData]);
 
   const sentinelRef = useIntersectionObserver(
-    useCallback(() => { // onIntersect 콜백을 useCallback으로 감싸서 최적화
-      if (!loading && hasMore && !isFetching.current) {
-        console.log("Intersection Observer triggered, incrementing page");
-        setPage((p) => {
-          const nextPage = p + 1;
-          console.log(`New page: ${nextPage}`);
-          return nextPage;
-        });
-      }
-    }, [loading, hasMore]) // 종속성 배열에 loading과 hasMore 추가
+    useCallback(() => {
+      // 로딩 중이거나 이미 요청 중일 때는 절대 페이지를 올리지 못하게 원천 차단합니다.
+      if (loading || isFetching.current || !hasMore) return;
+
+      console.log("[정상 무한스크롤] 바닥 감지됨 - 다음 페이지로 전환");
+      setPage((p) => p + 1);
+    }, [loading, hasMore]),
   );
-  
+
   const { currentKeyword, currentTagIds } = getCurrentSearchParams();
 
   const displayedTagElements = currentTagIds.map((tagId) => {
     const tag = tagsItem.find((t) => t.id === tagId);
     return tag ? (
-      <span key={tag.id} className="bg-main text-white py-1 px-4 rounded-full mr-2">
+      <span
+        key={tag.id}
+        className="px-4 py-1 mr-2 text-white rounded-full bg-main"
+      >
         {tag.name}
       </span>
     ) : null;
   });
 
   useEffect(() => {
-  const handleScroll = () => {
-    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 200) {
-      if (!loading && hasMore && !isFetching.current) {
-        console.log("Scroll event triggered, incrementing page");
-        setPage((p) => {
-          const nextPage = p + 1;
-          console.log(`New page: ${nextPage}`);
-          return nextPage;
-        });
+    const handleScroll = () => {
+      if (
+        window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - 200
+      ) {
+        if (!loading && hasMore && !isFetching.current) {
+          console.log("Scroll event triggered, incrementing page");
+          setPage((p) => {
+            const nextPage = p + 1;
+            console.log(`New page: ${nextPage}`);
+            return nextPage;
+          });
+        }
       }
-    }
-  };
-  window.addEventListener("scroll", handleScroll);
-  return () => window.removeEventListener("scroll", handleScroll);
-}, [loading, hasMore]);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [loading, hasMore]);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
       <div className="flex justify-between my-2">
-        <div className="flex overflow-x-auto items-center">
+        <div className="flex items-center overflow-x-auto">
           {displayedTagElements}
           {currentKeyword && (
-            <span className="bg-gray-200 text-gray-800 py-1 px-4 rounded-full mr-2">
+            <span className="px-4 py-1 mr-2 text-gray-800 bg-gray-200 rounded-full">
               검색어: {currentKeyword}
             </span>
           )}
@@ -144,22 +159,28 @@ export default function RestaurantList() {
       </div>
 
       {restaurantList.length === 0 && !loading ? (
-        <p className="text-center my-10 text-gray-500">검색 결과가 없습니다.</p>
+        <p className="my-10 text-center text-gray-500">검색 결과가 없습니다.</p>
       ) : (
         <>
           <List items={restaurantList} />
           {hasMore && (
             <div ref={sentinelRef} id="sentinel" className="my-4">
               {loading ? (
-                <p className="text-center text-gray-500">더 많은 식당을 불러오는 중...</p>
+                <p className="text-center text-gray-500">
+                  더 많은 식당을 불러오는 중...
+                </p>
               ) : (
                 <div className="w-full h-[100px]" />
               )}
             </div>
           )}
-          {loading && <p className="text-center my-4 text-gray-500">불러오는 중...</p>}
+          {loading && (
+            <p className="my-4 text-center text-gray-500">불러오는 중...</p>
+          )}
           {!hasMore && !loading && (
-            <p className="text-center my-4 text-gray-500">모든 식당을 불러왔습니다.</p>
+            <p className="my-4 text-center text-gray-500">
+              모든 식당을 불러왔습니다.
+            </p>
           )}
         </>
       )}
