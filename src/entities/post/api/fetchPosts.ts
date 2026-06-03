@@ -251,24 +251,32 @@ export const fetchPosts = async ({
 
 export const fetchCreatePost = async (formData: FormData) => {
   try {
-    const memberId = formData.get("memberId")
-      ? Number(formData.get("memberId"))
-      : null;
-    const restaurantId = formData.get("restaurantId")
-      ? Number(formData.get("restaurantId"))
+    const reservationId = formData.get("reservation_id")
+      ? Number(formData.get("reservation_id"))
       : null;
     const content = formData.get("content") as string;
-    const imageFile = formData.get("image") as File;
+    const tagIdsString = formData.get("tag_id") as string;
 
-    if (!restaurantId || !content) {
-      throw new Error("필수 데이터가 누락되었습니다.");
+    if (!reservationId || !content) {
+      throw new Error("필수 데이터 (예약 ID 또는 내용) 누락");
+    }
+
+    const { data: reservationInfo, error: resError } = await supabase
+      .from("reservations")
+      .select("restaurant_id, member_id")
+      .eq("id", reservationId)
+      .single();
+
+    if (resError || !reservationInfo) {
+      throw new Error("연관된 예약 정보를 데이터베이스에서 찾을 수 없습니다.");
     }
 
     const { data: newBoard, error: boardError } = await supabase
       .from("boards")
       .insert({
-        member_id: memberId,
-        restaurant_id: restaurantId,
+        member_id: reservationInfo.member_id,
+        restaurant_id: Number(reservationInfo.restaurant_id),
+        reservation_id: reservationId,
         content: content,
       })
       .select()
@@ -276,29 +284,41 @@ export const fetchCreatePost = async (formData: FormData) => {
 
     if (boardError) throw boardError;
 
-    if (imageFile && imageFile.size > 0) {
-      const fileExt = imageFile.name.split(".").pop();
-      const fileName = `${newBoard.id}-${Date.now()}.${fileExt}`;
-      const filePath = `reviews/${fileName}`;
+    const imageFiles = formData.getAll("images") as File[];
+    if (imageFiles && imageFiles.length > 0) {
+      for (let i = 0; i < imageFiles.length; i++) {
+        const file = imageFiles[i];
+        if (file.size === 0) continue;
 
-      const { error: uploadError } = await supabase.storage
-        .from("board-images")
-        .upload(filePath, imageFile);
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${newBoard.id}-${Date.now()}-${i}.${fileExt}`;
+        const filePath = `reviews/${fileName}`;
 
-      if (uploadError) throw uploadError;
+        const { error: uploadError } = await supabase.storage
+          .from("board-images")
+          .upload(filePath, file);
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("board-images").getPublicUrl(filePath);
+        if (uploadError) throw uploadError;
 
-      const { error: imgTableError } = await supabase
-        .from("board_images")
-        .insert({
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("board-images").getPublicUrl(filePath);
+
+        await supabase.from("board_images").insert({
           board_id: newBoard.id,
           image_url: publicUrl,
         });
+      }
+    }
 
-      if (imgTableError) throw imgTableError;
+    if (tagIdsString) {
+      const tagIds = tagIdsString.split(",").map(Number);
+      for (const tagId of tagIds) {
+        await supabase.from("board_tags").insert({
+          board_id: newBoard.id,
+          tag_id: tagId,
+        });
+      }
     }
 
     return newBoard;

@@ -7,7 +7,7 @@ import {
 
 // 예약 내역 목록 조회
 export const fetchMemberReservation = async (
-  memberId: number,
+  memberId: number | string,
 ): Promise<ReservationData[]> => {
   const { data, error } = await supabase
     .from("reservations")
@@ -53,7 +53,7 @@ export const fetchMemberReservation = async (
 // 예약 등록
 export const fetchReservation = async (
   reservatiaonData: ReservationRequest,
-  memberId: number,
+  memberId: number | string,
 ): Promise<ReservationResponse> => {
   const { data, error } = await supabase
     .from("reservations")
@@ -66,6 +66,7 @@ export const fetchReservation = async (
           ? `${reservatiaonData.reservationTime}:00`
           : reservatiaonData.reservationTime,
       reservation_status: "PENDING",
+      party_size: Number((reservatiaonData as any).partySize) || 1,
     })
     .select()
     .single();

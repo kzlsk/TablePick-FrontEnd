@@ -12,29 +12,45 @@ interface PostWriteModalProps {
   initialData?: {
     restaurant: string;
     content: string;
-    selectedTagIds?: number[]; 
+    selectedTagIds?: number[];
   };
 }
 
-export function PostWriteModal({ closeModal, reservationId, initialData }: PostWriteModalProps) {
-  const { data: tagsItem, isLoading: tagLoading, isError: tagError } = useTagQuery();
-  const [selectedTags, setSelectedTags] = useState<number[]>(initialData?.selectedTagIds || []);
-  const [restaurant, setRestaurant] = useState<string>(initialData?.restaurant || "");
+export function PostWriteModal({
+  closeModal,
+  reservationId,
+  initialData,
+}: PostWriteModalProps) {
+  const {
+    data: tagsItem,
+    isLoading: tagLoading,
+    isError: tagError,
+  } = useTagQuery();
+  const [selectedTags, setSelectedTags] = useState<number[]>(
+    initialData?.selectedTagIds || [],
+  );
+  const [restaurant, setRestaurant] = useState<string>(
+    initialData?.restaurant || "",
+  );
   const [content, setContent] = useState<string>(initialData?.content || "");
   const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  
-  const { isOpen, openModal, closeModal: closeFilterModal } = useModal({ initialState: false });
+
+  const {
+    isOpen,
+    openModal,
+    closeModal: closeFilterModal,
+  } = useModal({ initialState: false });
 
   useEffect(() => {
     if (initialData) {
       setRestaurant(initialData.restaurant);
       setContent(initialData.content);
-      setSelectedTags(initialData.selectedTagIds || []); 
+      setSelectedTags(initialData.selectedTagIds || []);
     } else {
       setRestaurant("");
       setContent("");
-      setSelectedTags([]); 
+      setSelectedTags([]);
       setSelectedImageFiles([]);
       setImagePreviews([]);
     }
@@ -47,7 +63,7 @@ export function PostWriteModal({ closeModal, reservationId, initialData }: PostW
       setSelectedImageFiles(newFiles);
 
       const newPreviews: string[] = [];
-      newFiles.forEach(file => {
+      newFiles.forEach((file) => {
         newPreviews.push(URL.createObjectURL(file));
       });
       setImagePreviews(newPreviews);
@@ -55,9 +71,13 @@ export function PostWriteModal({ closeModal, reservationId, initialData }: PostW
   };
 
   const handleRemoveImage = (indexToRemove: number) => {
-    const updatedFiles = selectedImageFiles.filter((_, index) => index !== indexToRemove);
+    const updatedFiles = selectedImageFiles.filter(
+      (_, index) => index !== indexToRemove,
+    );
     setSelectedImageFiles(updatedFiles);
-    const updatedPreviews = imagePreviews.filter((_, index) => index !== indexToRemove);
+    const updatedPreviews = imagePreviews.filter(
+      (_, index) => index !== indexToRemove,
+    );
     setImagePreviews(updatedPreviews);
   };
 
@@ -78,26 +98,26 @@ export function PostWriteModal({ closeModal, reservationId, initialData }: PostW
 
     const formData = new FormData();
 
-    formData.append('reservationId', reservationId.toString());
-    formData.append('content', content);
+    formData.append("reservation_id", reservationId.toString());
+    formData.append("content", content);
 
     if (selectedTags.length > 0) {
-      const tagIds = selectedTags.join(','); 
-      formData.append('tagId', tagIds);
+      const tagIds = selectedTags.join(",");
+      formData.append("tag_id", tagIds);
     }
 
     selectedImageFiles.forEach((file) => {
-      formData.append('images', file);
+      formData.append("images", file);
     });
 
     try {
       await fetchCreatePost(formData);
-      alert('게시글이 성공적으로 작성되었습니다!');
+      alert("게시글이 성공적으로 작성되었습니다!");
       closeModal();
     } catch (error: any) {
-      console.error('게시글 작성 중 오류 발생:', error);
-      // 401 에러는 인터셉터에서 처리하므로, 여기서는 일반적인 에러 메시지만 표시
-      const message = error.response?.data?.message || '게시글 작성에 실패했습니다.';
+      console.error("게시글 작성 중 오류 발생:", error);
+      const message =
+        error.response?.data?.message || "게시글 작성에 실패했습니다.";
       alert(message);
     }
   };
@@ -109,14 +129,14 @@ export function PostWriteModal({ closeModal, reservationId, initialData }: PostW
       close={
         <button
           onClick={closeModal}
-          className="text-main font-bold text-xl absolute top-2 right-2"
+          className="absolute text-xl font-bold text-main top-2 right-2"
         >
           X
         </button>
       }
       footer={
         <RoundedBtn
-          text='등록'
+          text="등록"
           onClick={handlePostSubmit}
           bgColor="bg-main"
           textColor="text-white"
@@ -161,7 +181,7 @@ export function PostWriteModal({ closeModal, reservationId, initialData }: PostW
         <div className="space-y-1.5">
           <label className="text-sm font-medium">태그 선택 (최대 5개)</label>
           {tagLoading && <p>로딩 중...</p>}
-          {tagError   && <p>태그 데이터를 불러오는 중 오류가 발생했습니다.</p>}
+          {tagError && <p>태그 데이터를 불러오는 중 오류가 발생했습니다.</p>}
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             {selectedTags.map((tagId) => {
               const currentTag = tagsItem?.find((t) => t.id === tagId);
@@ -169,7 +189,9 @@ export function PostWriteModal({ closeModal, reservationId, initialData }: PostW
                 <span
                   key={tagId}
                   className="cursor-pointer text-xs py-1 px-3 rounded-full bg-[#f1815c] text-white"
-                  onClick={() => setSelectedTags(prev => prev.filter(id => id !== tagId))} 
+                  onClick={() =>
+                    setSelectedTags((prev) => prev.filter((id) => id !== tagId))
+                  }
                 >
                   {currentTag ? currentTag.name : `Tag ${tagId}`} X
                 </span>
@@ -192,11 +214,14 @@ export function PostWriteModal({ closeModal, reservationId, initialData }: PostW
           <label className="text-sm font-medium">이미지 (최대 3개)</label>
           <div className="grid grid-cols-3 gap-2 mt-1.5">
             {imagePreviews.map((preview, index) => (
-              <div key={index} className="relative group rounded-md overflow-hidden border border-[#f1815c]/20">
+              <div
+                key={index}
+                className="relative group rounded-md overflow-hidden border border-[#f1815c]/20"
+              >
                 <img
                   src={preview}
                   alt={`첨부 이미지 ${index + 1}`}
-                  className="w-full h-16 object-cover"
+                  className="object-cover w-full h-16"
                 />
                 <button
                   type="button"
@@ -230,8 +255,8 @@ export function PostWriteModal({ closeModal, reservationId, initialData }: PostW
       {isOpen && (
         <FilterModal
           isOpen={isOpen}
-          selectedTags={selectedTags} 
-          setSelectedTags={setSelectedTags} 
+          selectedTags={selectedTags}
+          setSelectedTags={setSelectedTags}
           onClose={closeFilterModal}
         />
       )}
