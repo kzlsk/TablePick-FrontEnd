@@ -134,7 +134,7 @@ export default function Mypage() {
     if (isOpen === false) {
       syncMypageDataWithDatabase();
     }
-  }, [user?.id, isOpen]);
+  }, [user?.id]);
 
   const handleTagAdd = () => {
     setFormData((prev) => ({
@@ -255,6 +255,9 @@ export default function Mypage() {
               src={formData.profileImage || defaultProfile}
               alt="Profile"
               className="w-32 h-32 rounded-full"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = defaultProfile;
+              }}
             />
           </div>
 

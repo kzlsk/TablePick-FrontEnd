@@ -12,84 +12,110 @@ export default function OauthSuccess() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function handleSupabaseOauthSession() {
-      try {
-        setLoading(true);
+    let isMounted = true;
 
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_, session) => {
+      if (!isMounted) return;
 
-        if (sessionError || !session) {
-          throw new Error(
-            sessionError?.message || "로그인 세션을 찾을 수 없습니다.",
-          );
+      if (session) {
+        try {
+          setLoading(true);
+          const supabaseUser = session.user;
+          const metadata = supabaseUser.user_metadata;
+
+          if (!supabaseUser || !supabaseUser.email) {
+            throw new Error("유효하지 않은 사용자 정보");
+          }
+
+          const email = supabaseUser.email;
+
+          const nickname =
+            metadata?.name ||
+            metadata?.full_name ||
+            metadata?.custom_claims?.kakao_account?.profile?.nickname ||
+            "맛객";
+
+          const rawProfileImage =
+            metadata?.avatar_url ||
+            metadata?.picture ||
+            metadata?.custom_claims?.kakao_account?.profile
+              ?.profile_image_url ||
+            "";
+
+          const profileImage = rawProfileImage
+            ? `https://wsrv.nl/?url=${encodeURIComponent(rawProfileImage.replace(/=s\d+-c/g, "=s400"))}`
+            : defaultProfile;
+
+          const gender =
+            metadata?.gender ||
+            metadata?.custom_claims?.kakao_account?.gender ||
+            "";
+
+          const birthdate = metadata?.birthdate || "";
+          const phoneNumber =
+            supabaseUser.phone || metadata?.phone_number || "";
+
+          const createdAt = new Date(supabaseUser.created_at);
+          const now = new Date();
+          const isNewUser =
+            (now.getTime() - createdAt.getTime()) / (1000 * 60) < 1;
+
+          const normalizedUser = {
+            id: supabaseUser.id as any,
+            email: email,
+            nickname: nickname,
+            profileImage: profileImage,
+            gender: gender,
+            birthdate: birthdate,
+            phoneNumber: phoneNumber,
+            memberTags: [],
+            createAt: supabaseUser.created_at,
+            isNewUser: isNewUser,
+          };
+
+          login(normalizedUser);
+          sessionStorage.setItem("userInfo", JSON.stringify(normalizedUser));
+
+          const params = new URLSearchParams(location.search);
+          const redirectUrl = params.get("redirect") || "/";
+
+          subscription.unsubscribe();
+          if (!isNewUser) {
+            alert(`${nickname}님, 반가워요! 로그인이 완료되었습니다.`);
+            navigate(redirectUrl);
+          } else {
+            alert("회원가입을 환영합니다! 추가 정보를 입력해 주세요.");
+            navigate("/", { state: { redirectUrl, showFilterModal: true } });
+          }
+        } catch (err: any) {
+          console.error("OAuth 상태 처리 중 예외 발생:", err);
+          setError(err.message || "로그인 처리 중 오류가 발생했습니다.");
+        } finally {
+          if (isMounted) setLoading(false);
         }
-
-        const supabaseUser = session.user;
-        const metadata = supabaseUser.user_metadata;
-
-        if (!supabaseUser || !supabaseUser.email) {
-          throw new Error("유효하지 않은 사용자 정보입니다.");
-        }
-
-        const email = supabaseUser.email;
-        const nickname =
-          metadata?.custom_claims?.kakao_account?.profile?.nickname ||
-          metadata?.name ||
-          metadata?.full_name ||
-          "맛객";
-        const profileImage =
-          metadata?.avatar_url || metadata?.picture || defaultProfile;
-
-        const gender =
-          metadata?.gender ||
-          metadata?.custom_claims?.kakao_account?.gender ||
-          "";
-        const birthdate = metadata?.birthdate || "";
-        const phoneNumber = supabaseUser.phone || metadata?.phone_number || "";
-
-        const createdAt = new Date(supabaseUser.created_at);
-        const now = new Date();
-        const isNewUser =
-          (now.getTime() - createdAt.getTime()) / (1000 * 60) < 1;
-
-        const normalizedUser = {
-          id: supabaseUser.id as any,
-          email: email,
-          nickname: nickname,
-          profileImage: profileImage,
-          gender: gender,
-          birthdate: birthdate,
-          phoneNumber: phoneNumber,
-          memberTags: [],
-          createAt: supabaseUser.created_at,
-          isNewUser: isNewUser,
-        };
-
-        login(normalizedUser);
-        sessionStorage.setItem("userInfo", JSON.stringify(normalizedUser));
-
-        const params = new URLSearchParams(location.search);
-        const redirectUrl = params.get("redirect") || "/";
-
-        if (!isNewUser) {
-          alert(`${nickname}님, 반가워요! 로그인이 완료되었습니다.`);
-          navigate(redirectUrl);
-        } else {
-          alert("회원가입을 환영합니다! 추가 정보를 입력해 주세요.");
-          navigate("/", { state: { redirectUrl, showFilterModal: true } });
-        }
-      } catch (err: any) {
-        console.error("OAuth 처리 에러:", err);
-        setError(err.message || "로그인 처리 중 오류가 발생했습니다.");
-      } finally {
-        setLoading(false);
       }
-    }
+    });
 
-    handleSupabaseOauthSession();
+    const timeoutId = setTimeout(() => {
+      if (loading && !error) {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (!session && isMounted) {
+            setError(
+              "로그인 세션을 찾을 수 없습니다. 인증 세션 바인딩 타임아웃.",
+            );
+            setLoading(false);
+          }
+        });
+      }
+    }, 3000);
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+      clearTimeout(timeoutId);
+    };
   }, [login, navigate, location.search]);
 
   if (loading) {
