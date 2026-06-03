@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import useAuth from "@/features/auth/hook/useAuth";
 import defaultProfile from "@/@shared/images/user.png";
@@ -10,18 +10,27 @@ export default function OauthSuccess() {
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isProcessed = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_, session) => {
-      if (!isMounted) return;
+    const handleOAuthLogin = async () => {
+      if (isProcessed.current) return;
 
-      if (session) {
-        try {
-          setLoading(true);
+      try {
+        isProcessed.current = true;
+        setLoading(true);
+
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError) throw sessionError;
+        if (!isMounted) return;
+
+        if (session) {
           const supabaseUser = session.user;
           const metadata = supabaseUser.user_metadata;
 
@@ -30,7 +39,6 @@ export default function OauthSuccess() {
           }
 
           const email = supabaseUser.email;
-
           const nickname =
             metadata?.name ||
             metadata?.full_name ||
@@ -52,7 +60,6 @@ export default function OauthSuccess() {
             metadata?.gender ||
             metadata?.custom_claims?.kakao_account?.gender ||
             "";
-
           const birthdate = metadata?.birthdate || "";
           const phoneNumber =
             supabaseUser.phone || metadata?.phone_number || "";
@@ -74,49 +81,42 @@ export default function OauthSuccess() {
             createAt: supabaseUser.created_at,
             isNewUser: isNewUser,
           };
-
           login(normalizedUser);
           sessionStorage.setItem("userInfo", JSON.stringify(normalizedUser));
 
           const params = new URLSearchParams(location.search);
           const redirectUrl = params.get("redirect") || "/";
 
-          subscription.unsubscribe();
           if (!isNewUser) {
             alert(`${nickname}님, 반가워요! 로그인이 완료되었습니다.`);
-            navigate(redirectUrl);
+            navigate(redirectUrl, { replace: true });
           } else {
             alert("회원가입을 환영합니다! 추가 정보를 입력해 주세요.");
-            navigate("/", { state: { redirectUrl, showFilterModal: true } });
+            navigate("/", {
+              state: { redirectUrl, showFilterModal: true },
+              replace: true,
+            });
           }
-        } catch (err: any) {
-          console.error("OAuth 상태 처리 중 예외 발생:", err);
-          setError(err.message || "로그인 처리 중 오류가 발생했습니다.");
-        } finally {
-          if (isMounted) setLoading(false);
+        } else {
+          throw new Error("인증 세션을 유효하게 가져오지 못했습니다.");
         }
+      } catch (err: any) {
+        console.error("OAuth 로그인 처리 중 에러 발생:", err);
+        if (isMounted) {
+          setError(err.message || "로그인 처리 중 오류가 발생했습니다.");
+        }
+        isProcessed.current = false;
+      } finally {
+        if (isMounted) setLoading(false);
       }
-    });
+    };
 
-    const timeoutId = setTimeout(() => {
-      if (loading && !error) {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          if (!session && isMounted) {
-            setError(
-              "로그인 세션을 찾을 수 없습니다. 인증 세션 바인딩 타임아웃.",
-            );
-            setLoading(false);
-          }
-        });
-      }
-    }, 3000);
+    handleOAuthLogin();
 
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
-      clearTimeout(timeoutId);
     };
-  }, [login, navigate, location.search]);
+  }, []);
 
   if (loading) {
     return (

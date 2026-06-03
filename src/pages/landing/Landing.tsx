@@ -179,7 +179,7 @@ export default function Landing() {
   useEffect(() => {
     loadRestaurants();
     loadPosts();
-  }, [loadRestaurants, loadPosts]);
+  }, []);
 
   // 네비게이션 핸들러
   const handleResDetail = (id: number) => navigate(`/restaurants/${id}`);
@@ -192,7 +192,7 @@ export default function Landing() {
     } else {
       setIsAddInfoModalOpen(false);
     }
-  }, [isAuthenticated, user?.isNewUser, isAddInfoModalOpen]);
+  }, [isAuthenticated, user?.isNewUser]);
 
   const handleCloseAddInfoModal = useCallback(() => {
     setIsAddInfoModalOpen(false);

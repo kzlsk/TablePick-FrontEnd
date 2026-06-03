@@ -108,7 +108,7 @@ export default function PostList() {
       } catch (error) {
         setPostList([]);
         setHasMore(false);
-        alert("게시글을 불러오지 못했습니다. 다시 시도해주세요.");
+        // alert("게시글을 불러오지 못했습니다. 다시 시도해주세요.");
       } finally {
         isFetching.current = false;
         setLoading(false);

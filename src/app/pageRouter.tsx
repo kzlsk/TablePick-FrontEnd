@@ -4,9 +4,9 @@ import React, { Suspense } from "react";
 import OauthSuccess from "@/pages/oauth2/OAuthSuccessPage";
 
 const Landing = React.lazy(() => import("@/pages/landing/Landing"));
-const OAuthSuccess = React.lazy(
-  () => import("@/pages/oauth2/OAuthSuccessPage"),
-);
+// const OAuthSuccess = React.lazy(
+//   () => import("@/pages/oauth2/OAuthSuccessPage"),
+// );
 const RestaurantList = React.lazy(
   () => import("@/pages/restaurants/RestaurantList"),
 );
@@ -20,16 +20,13 @@ const MyPosts = React.lazy(() => import("@/pages/myPost/MyPosts"));
 const ReservationCheck = React.lazy(
   () => import("@/pages/reservation/ReservationCheck"),
 );
-const NotificationsPage = React.lazy(
-  () => import("@/pages/notification/NotificationsPage"),
-);
 
 export default function PageRouter() {
   return (
     <Suspense fallback={<div>...Loading</div>}>
       <Routes>
         <Route path="/" element={<Landing />} />
-        <Route path="/oauth2/success" element={<OAuthSuccess />} />
+        {/* <Route path="/oauth2/success" element={<OAuthSuccess />} /> */}
         <Route path="/restaurants" element={<RestaurantList />} />
         <Route path="/restaurants/:id" element={<RestaurantDetail />} />
         <Route path="/posts" element={<PostList />} />
@@ -37,7 +34,6 @@ export default function PageRouter() {
         <Route path="/mypage" element={<Mypage />} />
         <Route path="/my-posts" element={<MyPosts />} />
         <Route path="/reservation-check" element={<ReservationCheck />} />
-        <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/oauth-success" element={<OauthSuccess />} />
       </Routes>
     </Suspense>

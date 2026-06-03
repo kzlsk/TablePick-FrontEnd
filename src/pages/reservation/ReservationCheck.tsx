@@ -20,6 +20,8 @@ export default function ReservationCheck() {
     useState<ReservationData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const [isFetchLoading, setIsFetchLoading] = useState(false);
+
   const { user } = useAuth();
 
   useEffect(() => {
@@ -37,8 +39,9 @@ export default function ReservationCheck() {
   }, [selectedReservationData, selectedReservationId]);
 
   const fetchReservationCheck = async () => {
-    if (!user.id) return;
+    if (!user?.id || isFetchLoading) return;
     try {
+      setIsFetchLoading(true);
       const response = await fetchMemberReservation(user.id);
 
       const formattedReservations: CardItemProps[] = response.map(
@@ -88,11 +91,8 @@ export default function ReservationCheck() {
       setReservations(formattedReservations);
     } catch (error: any) {
       console.error("데이터 불러오기 실패:", error);
-      if (error.response?.status !== 401) {
-        const message =
-          error.response?.data?.message || "예약 정보를 불러오지 못했습니다.";
-        alert(message);
-      }
+    } finally {
+      setIsFetchLoading(false);
     }
   };
 

@@ -82,11 +82,11 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       try {
         const userData = JSON.parse(savedUser);
         if (userData && userData.id) {
-          setUser({ ...userData, isNewUser: userData.isNewUser || false });
+          setUser(userData);
           setIsAuthenticated(true);
         }
       } catch (error) {
-        console.error("AuthContext - 사용자 정보 파싱 오류:", error);
+        console.error("AuthContext 파싱 오류:", error);
       }
     }
   }, []);
@@ -108,9 +108,10 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   }, [navigate]);
 
   const login = (userData: UserInfo) => {
-    setIsAuthenticated(true);
-    setUser(userData);
     sessionStorage.setItem("userInfo", JSON.stringify(userData));
+    setUser(userData);
+    setIsAuthenticated(true);
+    console.log("4. AuthContext login() 실행, isAuthenticated → true");
   };
 
   return (

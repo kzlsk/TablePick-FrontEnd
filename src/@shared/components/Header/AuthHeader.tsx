@@ -1,25 +1,25 @@
 import logo from "@/@shared/images/logo_nobg.png";
 import search from "@/@shared/images/magnifying-glass.png";
-import alarmRing from "@/pages/notification/images/alarmRing.png";
+//import alarmRing from "@/pages/notification/images/alarmRing.png";
 import RoundedBtn from "@/@shared/components/Button/RoundedBtn";
 import useModal from "@/@shared/hook/useModal";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import useAuth from "@/features/auth/hook/useAuth";
 import SearchModal from "@/features/search/components/SearchModal";
 import defaultProfile from "@/@shared/images/user.png";
 import { fetchLogout } from "@/features/member/api/fetchMember";
 
 export default function AuthHeader() {
-  const navigate = useNavigate();
+  //const navigate = useNavigate();
   const location = useLocation();
   const pathname = location.pathname;
   const { isAuthenticated, user, logout } = useAuth();
   //const { mutateAsync: removeFcmtoken } = useFcmTokenRemoveMutation();
   const searchModal = useModal({ initialState: false });
 
-  const handleNavigateToAlarms = () => {
-    navigate("/notifications");
-  };
+  // const handleNavigateToAlarms = () => {
+  //   navigate("/notifications");
+  // };
 
   const handleLogout = async () => {
     if (!window.confirm("정말 로그아웃 하시겠습니까?")) return;
@@ -104,7 +104,7 @@ export default function AuthHeader() {
               />
             </button>
 
-            {isAuthenticated && (
+            {/* {isAuthenticated && (
               <button
                 onClick={handleNavigateToAlarms}
                 type="button"
@@ -118,7 +118,7 @@ export default function AuthHeader() {
                   className="w-[32px] h-[32px]"
                 />
               </button>
-            )}
+            )} */}
             <>
               <div>
                 <img

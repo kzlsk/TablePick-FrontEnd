@@ -48,13 +48,9 @@ export default function MyPosts() {
       setPost(formattedPosts);
     } catch (error) {
       console.log("로드 실패 : ", error);
-      alert("게시글을 불러오지 못했습니다. 다시 시도해주세요");
+      // alert("게시글을 불러오지 못했습니다. 다시 시도해주세요");
     }
   };
-
-  useEffect(() => {
-    loadMypost();
-  }, []);
 
   return (
     <div className="m-4">

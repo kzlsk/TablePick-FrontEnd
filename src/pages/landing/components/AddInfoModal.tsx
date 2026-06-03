@@ -25,8 +25,9 @@ export default function AddinfoModal({ isOpen, onClose }: AddinfoModalProps) {
   const [gender, setGender] = useState<"male" | "female" | undefined>();
   const [phone, setPhone] = useState("");
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
-
   const [isPhoneValid, setIsPhoneValid] = useState(true);
+
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const isValidPhoneNumber = (phone: string): boolean => {
     const phoneRegex = /^010-\d{4}-\d{4}$/;
@@ -42,7 +43,7 @@ export default function AddinfoModal({ isOpen, onClose }: AddinfoModalProps) {
   });
 
   useEffect(() => {
-    if (isOpen && user) {
+    if (isOpen && user && !isInitialized) {
       setGender(
         user.gender === "MALE"
           ? "male"
@@ -65,8 +66,9 @@ export default function AddinfoModal({ isOpen, onClose }: AddinfoModalProps) {
       } else {
         setSelectedTagIds([]);
       }
+      setIsInitialized(true);
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, isInitialized]);
 
   const handleGenderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setGender(event.target.value as "male" | "female");
@@ -214,7 +216,14 @@ export default function AddinfoModal({ isOpen, onClose }: AddinfoModalProps) {
                 id="birth"
                 name="birthdate"
                 value={date ? date.toISOString().slice(0, 10) : ""}
-                onChange={(e) => setDate(new Date(e.target.value))}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) {
+                    setDate(null);
+                  } else {
+                    setDate(new Date(val));
+                  }
+                }}
                 className="w-full p-2 border rounded"
               />
             </div>
