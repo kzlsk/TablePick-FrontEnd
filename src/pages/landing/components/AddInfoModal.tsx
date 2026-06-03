@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import Modal from '../../../@shared/components/Modal/Modal';
-import RoundedBtn from '../../../@shared/components/Button/RoundedBtn';
-import FilterModal from '../../../@shared/components/Modal/FilterModal';
-import useModal from '../../../@shared/hook/useModal';
-import useAuth from '@/features/auth/hook/useAuth'
-import { useTagQuery } from '@/entities/tag/hook/useTagQuery';
-import { fetchAddMemberInfo } from '@/features/member/api/fetchMember';
-import { AddMemberInfoProps } from '@/features/member/types/memberType';
+import React, { useState, useEffect } from "react";
+import Modal from "../../../@shared/components/Modal/Modal";
+import RoundedBtn from "../../../@shared/components/Button/RoundedBtn";
+import FilterModal from "../../../@shared/components/Modal/FilterModal";
+import useModal from "../../../@shared/hook/useModal";
+import useAuth from "@/features/auth/hook/useAuth";
+import { useTagQuery } from "@/entities/tag/hook/useTagQuery";
+import { fetchAddMemberInfo } from "@/features/member/api/fetchMember";
+//import { AddMemberInfoProps } from "@/features/member/types/memberType";
 
 interface AddinfoModalProps {
   isOpen: boolean;
@@ -22,16 +22,17 @@ export default function AddinfoModal({ isOpen, onClose }: AddinfoModalProps) {
   if (!tagsItem) return null;
 
   const [date, setDate] = useState<Date | null>(null);
-  const [gender, setGender] = useState<'male' | 'female' | undefined>();
-  const [phone, setPhone] = useState('');
+  const [gender, setGender] = useState<"male" | "female" | undefined>();
+  const [phone, setPhone] = useState("");
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
-
   const [isPhoneValid, setIsPhoneValid] = useState(true);
+
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const isValidPhoneNumber = (phone: string): boolean => {
     const phoneRegex = /^010-\d{4}-\d{4}$/;
     return phoneRegex.test(phone);
-  }
+  };
 
   const {
     isOpen: isFilterModalOpen,
@@ -41,34 +42,40 @@ export default function AddinfoModal({ isOpen, onClose }: AddinfoModalProps) {
     initialState: false,
   });
 
-
   useEffect(() => {
-    if (isOpen && user) {
+    if (isOpen && user && !isInitialized) {
       setGender(
-        user.gender === 'MALE'
-          ? 'male'
-          : user.gender === 'FEMALE'
-            ? 'female'
-            : undefined
+        user.gender === "MALE"
+          ? "male"
+          : user.gender === "FEMALE"
+            ? "female"
+            : undefined,
       );
       setDate(user.birthdate ? new Date(user.birthdate) : null);
-      const formattedPhone = user.phoneNumber ? formatPhoneNumber(user.phoneNumber) : '';
+      const formattedPhone = user.phoneNumber
+        ? formatPhoneNumber(user.phoneNumber)
+        : "";
       setPhone(formattedPhone);
-      setIsPhoneValid(formattedPhone ? isValidPhoneNumber(formattedPhone) : true);
+      setIsPhoneValid(
+        formattedPhone ? isValidPhoneNumber(formattedPhone) : true,
+      );
       if (Array.isArray(user.memberTags)) {
-        setSelectedTagIds(user.memberTags.map((id: string | number) => Number(id)));
+        setSelectedTagIds(
+          user.memberTags.map((id: string | number) => Number(id)),
+        );
       } else {
         setSelectedTagIds([]);
       }
+      setIsInitialized(true);
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, isInitialized]);
 
   const handleGenderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setGender(event.target.value as 'male' | 'female');
+    setGender(event.target.value as "male" | "female");
   };
 
   const formatPhoneNumber = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
+    const numbers = value.replace(/\D/g, "");
     if (numbers.length <= 3) return numbers;
     if (numbers.length <= 7)
       return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
@@ -76,36 +83,51 @@ export default function AddinfoModal({ isOpen, onClose }: AddinfoModalProps) {
   };
 
   const handlePhoneChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const input = event.target.value.replace(/\D/g, '');
+    const input = event.target.value.replace(/\D/g, "");
     const formatted = formatPhoneNumber(input);
     setPhone(formatted);
     setIsPhoneValid(isValidPhoneNumber(formatted) || formatted.length < 12);
   };
 
   const handleApply = async () => {
-    if (!gender || !date || phone.trim() === '' || selectedTagIds.length === 0 || !isValidPhoneNumber(phone)) {
-      alert('모든 폼을 다 채워주세요! 전화번호는 010-1234-5678 형식이어야 합니다.');
+    if (!user?.id) {
+      alert("카카오 인증 세션이 만료되었습니다. 다시 로그인해 주세요.");
       return;
-    };
+    }
+    if (
+      !gender ||
+      !date ||
+      phone.trim() === "" ||
+      selectedTagIds.length === 0 ||
+      !isValidPhoneNumber(phone)
+    ) {
+      alert(
+        "모든 폼을 다 채워주세요! 전화번호는 010-1234-5678 형식이어야 합니다.",
+      );
+      return;
+    }
+
     try {
-      const updatedData: AddMemberInfoProps = {
-        gender:
-          gender === 'male' ? 'MALE' : gender === 'female' ? 'FEMALE' : '',
-        birthdate: date ? date.toISOString().slice(0, 10) : '',
+      const updatedData = {
+        id: user.id,
+        nickname: user.nickname || (user as any).name || "카카오 유저",
+        profile_image: user.profileImage || (user as any).profile_image || "",
+        gender: (gender === "male"
+          ? "MALE"
+          : gender === "female"
+            ? "FEMALE"
+            : "") as "MALE" | "FEMALE" | "",
+        birthdate: date ? date.toISOString().slice(0, 10) : "",
         phoneNumber: phone,
         memberTags: selectedTagIds,
       };
 
       await fetchAddMemberInfo(updatedData);
 
-      if (!user) { // user가 null일 경우 대비
-          console.error('사용자 정보가 없어 추가 정보를 저장할 수 없습니다.');
-          alert('사용자 정보가 없어 추가 정보를 저장할 수 없습니다. 다시 로그인해주세요.');
-          return;
-      }
-
       const updatedUserInfo = {
-        ...user!,
+        ...user,
+        nickname: updatedData.nickname,
+        profileImage: updatedData.profile_image,
         gender: updatedData.gender,
         birthdate: updatedData.birthdate,
         phoneNumber: updatedData.phoneNumber,
@@ -114,15 +136,19 @@ export default function AddinfoModal({ isOpen, onClose }: AddinfoModalProps) {
       };
 
       login(updatedUserInfo);
-    
-      sessionStorage.setItem('userInfo', JSON.stringify(updatedUserInfo));
+      sessionStorage.setItem("userInfo", JSON.stringify(updatedUserInfo));
+
+      alert("회원가입 추가 정보가 정상적으로 저장되었습니다!");
       onClose();
     } catch (error) {
-      console.error('정보 저장 실패:', error);
-      alert('정보 저장에 실패했습니다.');
+      console.error("정보 저장 실패:", error);
+      alert("가입 정보 저장에 실패했습니다. 입력값을 다시 확인해 주세요.");
     }
   };
 
+  if (isLoading) return <p>로딩 중...</p>;
+  if (isError) return <p>태그 데이터를 불러오는 중 오류가 발생했습니다.</p>;
+  if (!tagsItem) return null;
   if (!isOpen) return null;
 
   return (
@@ -146,22 +172,22 @@ export default function AddinfoModal({ isOpen, onClose }: AddinfoModalProps) {
       >
         <div className="m-3 space-y-4">
           <div>
-            <p className="text-main font-bold text-2xl">추가 정보 입력</p>
-            <p className="text-gray-500 font-semibold">
+            <p className="text-2xl font-bold text-main">추가 정보 입력</p>
+            <p className="font-semibold text-gray-500">
               서비스 이용을 위해 추가 정보를 입력해주세요!
             </p>
           </div>
 
           {/* 성별 */}
           <div>
-            <p className="font-semibold text-lg mb-2">성별</p>
+            <p className="mb-2 text-lg font-semibold">성별</p>
             <div className="flex space-x-4">
               <label className="flex items-center gap-2">
                 <input
                   type="radio"
                   name="gender"
                   value="male"
-                  checked={gender === 'male'}
+                  checked={gender === "male"}
                   onChange={handleGenderChange}
                 />
                 남성
@@ -171,7 +197,7 @@ export default function AddinfoModal({ isOpen, onClose }: AddinfoModalProps) {
                   type="radio"
                   name="gender"
                   value="female"
-                  checked={gender === 'female'}
+                  checked={gender === "female"}
                   onChange={handleGenderChange}
                 />
                 여성
@@ -181,51 +207,62 @@ export default function AddinfoModal({ isOpen, onClose }: AddinfoModalProps) {
 
           {/* 생년월일 */}
           <div>
-            <label htmlFor='birth' className="font-semibold text-lg mb-2">생년월일</label>
+            <label htmlFor="birth" className="mb-2 text-lg font-semibold">
+              생년월일
+            </label>
             <div className="relative">
               <input
                 type="date"
-                id='birth'
-                name='birthdate'
-                value={date ? date.toISOString().slice(0, 10) : ''}
-                onChange={(e) => setDate(new Date(e.target.value))}
-                className="w-full border p-2 rounded"
+                id="birth"
+                name="birthdate"
+                value={date ? date.toISOString().slice(0, 10) : ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) {
+                    setDate(null);
+                  } else {
+                    setDate(new Date(val));
+                  }
+                }}
+                className="w-full p-2 border rounded"
               />
             </div>
           </div>
 
           {/* 전화번호 */}
           <div>
-            <p className="font-semibold text-lg mb-2">전화번호</p>
+            <p className="mb-2 text-lg font-semibold">전화번호</p>
             <input
               type="text"
               value={phone}
               onChange={handlePhoneChange}
-              className="w-full border p-2 rounded"
+              className="w-full p-2 border rounded"
               placeholder="010-1234-5678"
             />
             {!isPhoneValid && phone.length >= 12 && (
-              <p className='text-red-500 text-sm mt-1'>유효한 전화번호 형식이 아닙니다. (010-1234-5678)</p>
+              <p className="mt-1 text-sm text-red-500">
+                유효한 전화번호 형식이 아닙니다. (010-1234-5678)
+              </p>
             )}
           </div>
 
           {/* 태그 선택 */}
           <div>
-            <p className="font-semibold text-lg mb-2">관심 카테고리</p>
+            <p className="mb-2 text-lg font-semibold">관심 카테고리</p>
             <button
               onClick={openFilterModal}
-              className="px-3 py-1 rounded border border-main text-main hover:bg-main hover:text-white transition"
+              className="px-3 py-1 transition border rounded border-main text-main hover:bg-main hover:text-white"
             >
               태그 선택하기
             </button>
 
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mt-2">
               {selectedTagIds.map((id) => {
                 const tag = tagsItem?.find((tag) => tag.id === id);
                 return tag ? (
                   <span
                     key={id}
-                    className="bg-main text-white px-2 py-1 rounded text-sm"
+                    className="px-2 py-1 text-sm text-white rounded bg-main"
                   >
                     {tag.name}
                   </span>

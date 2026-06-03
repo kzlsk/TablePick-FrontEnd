@@ -5,16 +5,18 @@
     { "path": "./tsconfig.app.json" }
   ],
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["./src/*"]
     },
-    "types" : ["vite/client"],
+    "types": ["vite/client", "cypress", "node"],
     "lib": ["ES2022", "DOM", "DOM.Iterable", "ESNext"],
-    "outDir": "./dist" ,
+    "outDir": "./dist",
     "jsx": "react-jsx"
   },
-  "include": [ "src/**/*.ts", "src/**/*.tsx", "src/@shared/types/**/*.d.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/@shared/types/**/*.d.ts",
+    "cypress/**/*.ts"
+  ]
 }

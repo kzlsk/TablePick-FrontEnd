@@ -1,31 +1,12 @@
 import { CardItemProps } from "@/@shared/types/cardItemsType";
 import List from "@/@shared/components/List";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useSearchParams} from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useTagQuery } from "@/entities/tag/hook/useTagQuery";
-import defaultImg from '@/@shared/images/logo.png';
+import defaultImg from "@/@shared/images/logo.png";
 import { fetchRestaurantsList } from "@/entities/restaurants/api/fetchRestaurants";
+import { RestaurantListData } from "@/entities/restaurants/types/restaurantType";
 import useIntersectionObserver from "@/@shared/hook/useIntersectionObserver";
-
-
-interface RestaurantData {
-  id: number;
-  name: string;
-  address: string;
-  restaurantPhoneNumber: string;
-  restaurantCategory: {
-    id: number;
-    name: string;
-  };
-  restaurantImage: string;
-  restaurantOperatingHours: Array<{
-    dayOfWeek: string;
-    openTime: string | null;
-    closeTime: string | null;
-    holiday: boolean;
-  }>;
-  restaurantTags: string[];
-}
 
 export default function RestaurantList() {
   const [restaurantList, setRestaurantList] = useState<CardItemProps[]>([]);
@@ -42,78 +23,135 @@ export default function RestaurantList() {
   const getCurrentSearchParams = () => {
     const currentKeyword = searchParams.get("keyword") || "";
     const currentTagIds = searchParams.get("tagIds")
-        ? searchParams.get("tagIds")?.split(",").map(Number).filter((id) => !isNaN(id)) || []
-        : [];
+      ? searchParams
+          .get("tagIds")
+          ?.split(",")
+          .map(Number)
+          .filter((id) => !isNaN(id)) || []
+      : [];
     return { currentKeyword, currentTagIds };
   };
 
   const isFetching = useRef(false);
 
-  // 데이터 가져오기 
   const fetchData = useCallback(
-  async (fetchPage: number, keyword: string, tagIds: number[], isInitialLoad: boolean) => {
-    if (isFetching.current) return;
-    isFetching.current = true;
-    setLoading(true);
-    try {
-      const { restaurants, totalPages: fetchedTotalPages } = await fetchRestaurantsList(fetchPage, keyword, tagIds);
+    async (
+      fetchPage: number,
+      keyword: string,
+      tagIds: number[],
+      isInitialLoad: boolean,
+    ) => {
+      if (isFetching.current) return;
+      isFetching.current = true;
+      setLoading(true);
+      try {
+        const { restaurants, totalPages: fetchedTotalPages } =
+          await fetchRestaurantsList(fetchPage, keyword, tagIds);
 
-      const converted: CardItemProps[] = restaurants.map(
-        (item: RestaurantData): CardItemProps => ({
-          id: item.id,
-          image: item.restaurantImage || defaultImg,
-          restaurantName: item.name,
-          description: item.address,
-          tags: item.restaurantTags || [],
-          linkTo: `/restaurants/${item.id}`,
-        })
-      );
+        const converted: CardItemProps[] = restaurants.map(
+          (item: RestaurantListData): any => {
+            let categoryName = "기타";
+            if (item.restaurantCategory) {
+              if (typeof item.restaurantCategory === "string") {
+                categoryName = item.restaurantCategory;
+              } else if (item.restaurantCategory.name) {
+                categoryName = item.restaurantCategory.name;
+              }
+            }
 
-      setRestaurantList((prev) => {
-        return isInitialLoad ? converted : [...prev, ...converted];
-      });
-      setHasMore(fetchPage < fetchedTotalPages - 1);
-    } catch (error) {
-      setHasMore(false);
-    } finally {
-      isFetching.current = false;
-      setLoading(false);
-    }
-  },
-  []
-);
+            const combinedTags: string[] = [
+              categoryName,
+              ...(item.restaurantTags || []),
+            ];
+
+            return {
+              id: item.id,
+              image: item.restaurantImage || defaultImg,
+              restaurantName: item.name,
+              description: item.address,
+              tags: combinedTags,
+              linkTo: `/restaurants/${item.id}`,
+            };
+          },
+        );
+
+        setRestaurantList((prev) => {
+          if (isInitialLoad) {
+            return converted;
+          } else {
+            const existingIds = new Set(prev.map((item) => item.id));
+            const newItems = converted.filter(
+              (item) => !existingIds.has(item.id),
+            );
+            return [...prev, ...newItems];
+          }
+        });
+        setHasMore(fetchPage < fetchedTotalPages - 1);
+      } catch (error) {
+        console.error("Fetch error:", error);
+        setHasMore(false);
+      } finally {
+        isFetching.current = false;
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
+    console.log("Search params changed:", searchParams.toString());
     setPage(0);
     setRestaurantList([]);
     setHasMore(true);
+    setLoading(true);
+    isFetching.current = false;
     const { currentKeyword, currentTagIds } = getCurrentSearchParams();
     fetchData(0, currentKeyword, currentTagIds, true);
   }, [searchParams, fetchData]);
 
   useEffect(() => {
     if (page === 0) return;
+    console.log("Page changed:", page);
     const { currentKeyword, currentTagIds } = getCurrentSearchParams();
     fetchData(page, currentKeyword, currentTagIds, false);
   }, [page, fetchData]);
 
-  const sentinelRef = useIntersectionObserver(() => {
-    if (!loading && hasMore) {
-      setPage((p) => {
-        return p + 1;
-      });
-    }
+  const sentinelRef = useIntersectionObserver(
+    useCallback(() => {
+      // 로딩 중이거나 이미 요청 중일 때는 절대 페이지를 올리지 못하게 원천 차단합니다.
+      if (loading || isFetching.current || !hasMore) return;
+
+      console.log("[정상 무한스크롤] 바닥 감지됨 - 다음 페이지로 전환");
+      setPage((p) => p + 1);
+    }, [loading, hasMore]),
+  );
+
+  const { currentKeyword, currentTagIds } = getCurrentSearchParams();
+
+  const displayedTagElements = currentTagIds.map((tagId) => {
+    const tag = tagsItem.find((t) => t.id === tagId);
+    return tag ? (
+      <span
+        key={tag.id}
+        className="px-4 py-1 mr-2 text-white rounded-full bg-main"
+      >
+        {tag.name}
+      </span>
+    ) : null;
   });
 
-    useEffect(() => {
-    }, [restaurantList]);
-  
   useEffect(() => {
     const handleScroll = () => {
-      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 200) {
-        if (!loading && hasMore) {
+      if (
+        window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - 200
+      ) {
+        if (!loading && hasMore && !isFetching.current) {
+          console.log("Scroll event triggered, incrementing page");
           setPage((p) => {
-            return p + 1;
+            const nextPage = p + 1;
+            console.log(`New page: ${nextPage}`);
+            return nextPage;
           });
         }
       }
@@ -121,25 +159,14 @@ export default function RestaurantList() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [loading, hasMore]);
-  
-  const { currentKeyword, currentTagIds } = getCurrentSearchParams();
-
-  const displayedTagElements = currentTagIds.map((tagId) => {
-    const tag = tagsItem.find((t) => t.id === tagId);
-    return tag ? (
-      <span key={tag.id} className="bg-main text-white py-1 px-4 rounded-full mr-2">
-        {tag.name}
-      </span>
-    ) : null;
-  });
 
   return (
-    <div className="mx-[300px]">
-      <div className="flex justify-between mx-6 my-2">
-        <div className="flex overflow-x-auto items-center">
+    <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
+      <div className="flex justify-between my-2">
+        <div className="flex items-center overflow-x-auto">
           {displayedTagElements}
           {currentKeyword && (
-            <span className="bg-gray-200 text-gray-800 py-1 px-4 rounded-full mr-2">
+            <span className="px-4 py-1 mr-2 text-gray-800 bg-gray-200 rounded-full">
               검색어: {currentKeyword}
             </span>
           )}
@@ -147,20 +174,28 @@ export default function RestaurantList() {
       </div>
 
       {restaurantList.length === 0 && !loading ? (
-        <p className="text-center my-10 text-gray-500">검색 결과가 없습니다.</p>
+        <p className="my-10 text-center text-gray-500">검색 결과가 없습니다.</p>
       ) : (
         <>
           <List items={restaurantList} />
-
           {hasMore && (
-            <div ref={sentinelRef}/>
+            <div ref={sentinelRef} id="sentinel" className="my-4">
+              {loading ? (
+                <p className="text-center text-gray-500">
+                  더 많은 식당을 불러오는 중...
+                </p>
+              ) : (
+                <div className="w-full h-[100px]" />
+              )}
+            </div>
           )}
-
           {loading && (
-            <p className="text-center my-4 text-gray-500">불러오는 중...</p>
+            <p className="my-4 text-center text-gray-500">불러오는 중...</p>
           )}
           {!hasMore && !loading && (
-            <p className="text-center my-4 text-gray-500">모든 식당을 불러왔습니다.</p>
+            <p className="my-4 text-center text-gray-500">
+              모든 식당을 불러왔습니다.
+            </p>
           )}
         </>
       )}

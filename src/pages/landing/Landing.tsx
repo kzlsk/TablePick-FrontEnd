@@ -1,14 +1,15 @@
-import { Suspense, lazy } from 'react';
-import loc from '@/@shared/images/location.png';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useState, useCallback } from 'react';
-const AddinfoModal = lazy(() => import('./components/AddInfoModal'));
-import content from '@/@shared/images/content.png';
-import useAuth from '@/features/auth/hook/useAuth'
-import { fetchPosts } from '@/entities/post/api/fetchPosts';
-import { Post } from '@/entities/post/types/postType';
-import { fetchRestaurantsLanding } from '@/entities/restaurants/api/fetchRestaurants';
-import { RestaurantLandingData } from '@/entities/restaurants/types/restaurantType';
+import { Suspense, lazy } from "react";
+import loc from "@/@shared/images/location.png";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState, useCallback } from "react";
+const AddinfoModal = lazy(() => import("./components/AddInfoModal"));
+import content from "@/@shared/images/content.png";
+import useAuth from "@/features/auth/hook/useAuth";
+import { fetchPosts } from "@/entities/post/api/fetchPosts";
+import { Post } from "@/entities/post/types/postType";
+import { fetchRestaurantsLanding } from "@/entities/restaurants/api/fetchRestaurants";
+import { RestaurantLandingData } from "@/entities/restaurants/types/restaurantType";
+import logo from "@/@shared/images/logo.png";
 
 // 레스토랑 카드 컴포넌트
 function RestaurantCard({
@@ -26,27 +27,22 @@ function RestaurantCard({
       {/* 이미지 컨테이너 */}
       <div className="w-full h-[250px] overflow-hidden">
         <img
-          src={item.imageUrl}
+          src={item.imageUrl || logo}
           alt={item.name}
-          className="w-full h-full object-cover"
+          className="object-cover w-full h-full"
         />
       </div>
 
       {/* 텍스트 영역 */}
-      <div className="flex flex-col px-4 py-3 flex-grow justify-between">
+      <div className="flex flex-col justify-between flex-grow px-4 py-3">
         {/* 이름 + 카테고리 */}
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <span className="text-xl font-semibold truncate">{item.name}</span>
-            {item.categoryName && (
-              <span className="text-sm bg-main text-white px-2 py-0.5 rounded-full">
-                {item.categoryName}
-              </span>
-            )}
           </div>
 
           {/* 주소 */}
-          <div className="flex items-start text-medium text-gray-600 mt-1 gap-1">
+          <div className="flex items-start gap-1 mt-1 text-gray-600 text-medium">
             <img
               width={24}
               height={24}
@@ -59,10 +55,15 @@ function RestaurantCard({
         </div>
 
         {/* 태그 */}
-        {item.restaurantTags && item.restaurantTags.length > 0 && ( // item.restaurantTags가 존재하고 길이가 0보다 큰지 확인
-          <div className="mt-2 overflow-x-auto scrollbar-hide">
-            <div className="flex gap-2 w-max">
-              {item.restaurantTags.map((tag, index) => (
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-2 w-max">
+            {item.categoryName && (
+              <span className="text-sm bg-main text-white px-2 py-0.5 rounded-full whitespace-nowrap">
+                {item.categoryName}
+              </span>
+            )}
+            {item.tagNames?.length > 0 &&
+              item.tagNames.map((tag, index) => (
                 <span
                   key={index}
                   className="whitespace-nowrap bg-gray-200 text-primary text-sm px-2 py-0.5 rounded-full"
@@ -70,9 +71,8 @@ function RestaurantCard({
                   {tag}
                 </span>
               ))}
-            </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
@@ -88,31 +88,28 @@ function PostCard({ item, onClick }: { item: Post; onClick?: () => void }) {
       {/* 이미지 컨테이너 */}
       <div className="w-full h-[250px] overflow-hidden">
         <img
-          src={item.imageUrl}
+          src={item.imageUrl || logo}
           alt={item.restaurantName}
-          className="w-full h-full object-cover"
+          className="object-cover w-full h-full"
         />
       </div>
 
       {/* 텍스트 영역 */}
-      <div className="flex flex-col px-4 py-3 flex-grow justify-between">
+      <div className="flex flex-col justify-between flex-grow px-4 py-3">
         {/* 이름 + 카테고리 */}
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-semibold truncate">{item.restaurantName}</span>
-            {item.restaurantCategoryName && (
-              <span className="text-sm bg-main text-white px-2 py-0.5 rounded-full">
-                {item.restaurantCategoryName}
-              </span>
-            )}
+            <span className="text-xl font-semibold truncate">
+              {item.restaurantName}
+            </span>
           </div>
 
           {/* 내용 */}
-          <div className="flex items-start text-medium text-gray-600 mt-1 gap-1">
+          <div className="flex items-start gap-1 mt-1 text-gray-600 text-medium">
             <img
               width={24}
               height={24}
-              src={content}
+              src={content || logo}
               alt="location icon"
               className="w-4 h-4 mr-1"
             />
@@ -121,10 +118,15 @@ function PostCard({ item, onClick }: { item: Post; onClick?: () => void }) {
         </div>
 
         {/* 태그 */}
-        {/* {item.restaurantCategoryName.length > 0 && (
-          <div className="mt-2 overflow-x-auto scrollbar-hide">
-            <div className="flex gap-2 w-max">
-              {item.tagNames.map((tag, index) => (
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-2 w-max">
+            {item.restaurantCategoryName && (
+              <span className="text-sm bg-main text-white px-2 py-0.5 rounded-full whitespace-nowrap">
+                {item.restaurantCategoryName}
+              </span>
+            )}
+            {item.tagNames?.length > 0 &&
+              item.tagNames.map((tag, index) => (
                 <span
                   key={index}
                   className="whitespace-nowrap bg-gray-200 text-primary text-sm px-2 py-0.5 rounded-full"
@@ -132,9 +134,8 @@ function PostCard({ item, onClick }: { item: Post; onClick?: () => void }) {
                   {tag}
                 </span>
               ))}
-            </div>
           </div>
-        )} */}
+        </div>
       </div>
     </div>
   );
@@ -150,15 +151,15 @@ export default function Landing() {
 
   const [isAddInfoModalOpen, setIsAddInfoModalOpen] = useState(false);
 
-  const redirectUrl = location.state?.redirectUrl || '/';
+  const redirectUrl = location.state?.redirectUrl || "/";
 
   //게시글 데이터 가져오기
   const loadPosts = useCallback(async () => {
     try {
-      const {data} = await fetchPosts({page: 0, size:4});
+      const { data } = await fetchPosts({ page: 0, size: 4 });
       setPosts(data);
     } catch (error) {
-      console.error('게시글 데이터 가져오기 실패:', error);
+      console.error("게시글 데이터 가져오기 실패:", error);
       setPosts([]);
     }
   }, []);
@@ -169,7 +170,7 @@ export default function Landing() {
       const restaurantsData = await fetchRestaurantsLanding();
       setRestaurants(restaurantsData);
     } catch (error) {
-      console.error('레스토랑 데이터 가져오기 실패:', error);
+      console.error("레스토랑 데이터 가져오기 실패:", error);
       setRestaurants([]);
     }
   }, []);
@@ -178,7 +179,7 @@ export default function Landing() {
   useEffect(() => {
     loadRestaurants();
     loadPosts();
-  }, [loadRestaurants, loadPosts]);
+  }, []);
 
   // 네비게이션 핸들러
   const handleResDetail = (id: number) => navigate(`/restaurants/${id}`);
@@ -191,13 +192,13 @@ export default function Landing() {
     } else {
       setIsAddInfoModalOpen(false);
     }
-  }, [isAuthenticated, user?.isNewUser, isAddInfoModalOpen]);
-  
+  }, [isAuthenticated, user?.isNewUser]);
+
   const handleCloseAddInfoModal = useCallback(() => {
     setIsAddInfoModalOpen(false);
     window.location.href = redirectUrl;
     if (user?.id) {
-      sessionStorage.setItem(`hasCompletedAdditionalInfo_${user.id}`, 'true');
+      sessionStorage.setItem(`hasCompletedAdditionalInfo_${user.id}`, "true");
       const updatedUser = { ...user, isNewUser: false };
       login(updatedUser);
     }
@@ -208,13 +209,15 @@ export default function Landing() {
       {/* 유저 정보 입력 모달 */}
       {isAddInfoModalOpen && (
         <Suspense fallback={<div>로딩중...</div>}>
-          <AddinfoModal isOpen={isAddInfoModalOpen} onClose={handleCloseAddInfoModal} />
+          <AddinfoModal
+            isOpen={isAddInfoModalOpen}
+            onClose={handleCloseAddInfoModal}
+          />
         </Suspense>
       )}
-      
 
       {/* 메인 컨텐츠 */}
-      <div className="p-3 flex flex-1 flex-col items-center">
+      <div className="flex flex-col items-center flex-1 p-3">
         {/* 추천 매장 섹션 */}
         <section className="p-8 border-b border-gray-300">
           <div className="container">
@@ -223,7 +226,7 @@ export default function Landing() {
                 <h2 className="text-3xl font-bold tracking-tighter">
                   회원님을 위한 맛집 추천
                 </h2>
-                <p className="text-gray-500 mt-1 text-lg">
+                <p className="mt-1 text-lg text-gray-500">
                   회원님의 취향에 맞는 맛집을 추천해드려요
                 </p>
               </div>
@@ -248,7 +251,7 @@ export default function Landing() {
                 <h2 className="text-3xl font-bold tracking-tighter">
                   회원님을 위한 게시글 추천
                 </h2>
-                <p className="text-gray-500 mt-1 text-lg">
+                <p className="mt-1 text-lg text-gray-500">
                   회원님의 취향에 맞는 게시글을 추천해드려요
                 </p>
               </div>

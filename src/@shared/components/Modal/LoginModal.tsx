@@ -1,12 +1,6 @@
-import pic from '@/@shared/images/login.png';
-import {
-  getFCMToken,
-  getSavedFCMToken,
-  saveFCMToken,
-} from '../../../features/notification/lib/firebase';
-import { useState } from 'react';
-import api from '../../api/api';
-import { useFcmtokenUpdate } from '@/features/auth/hook/mutations/useFcmtokenUpdate';
+import pic from "@/@shared/images/login.png";
+import { useState } from "react";
+import { fetchSocialLogin } from "@/features/member/api/fetchMember";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -16,55 +10,24 @@ interface LoginModalProps {
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const { mutateAsync: updateFcmtoken } = useFcmtokenUpdate();
-
   const baseClasses =
-    'w-[300px] h-12 flex items-center justify-center rounded font-medium text-base cursor-pointer px-4 mb-3';
-  const iconClasses = 'mr-2 w-5 h-5';
+    "w-[300px] h-12 flex items-center justify-center rounded font-medium text-base cursor-pointer px-4 mb-3";
+  const iconClasses = "mr-2 w-5 h-5";
 
   if (!isOpen) return null;
 
   // 로그인 처리 함수
-  const handleLogin = async (provider: string) => {
+  const handleLogin = async (provider: "google" | "kakao") => {
     try {
       setIsLoggingIn(true);
 
       const currentUrl = window.location.pathname + window.location.search;
       const redirectUrl = encodeURIComponent(currentUrl);
 
-      // 로그인 성공 후 FCM 토큰 처리를 위한 이벤트 리스너 설정
-      window.addEventListener(
-        'message',
-        async (event) => {
-          // 로그인 성공 메시지를 받았을 때
-          if (
-            event.data &&
-            event.data.type === 'LOGIN_SUCCESS' &&
-            event.data.userId
-          ) {
-            const userId = event.data.userId;
-
-            // 저장된 FCM 토큰이 있는지 확인
-            let fcmToken = getSavedFCMToken();
-
-            // 저장된 토큰이 없으면 새로 발급
-            if (!fcmToken) {
-              fcmToken = await getFCMToken();
-            }
-
-            // 서버에 토큰 저장
-            if (fcmToken) {
-              await saveFCMToken(userId, fcmToken, updateFcmtoken);
-            }
-          }
-          setIsLoggingIn(false);
-        },
-        { once: true }
-      );
-
-      window.location.href = `${api.defaults.baseURL}/oauth2/authorization/${provider}?redirect=${redirectUrl}`;
+      await fetchSocialLogin(provider, redirectUrl);
     } catch (error) {
-      console.error('로그인 처리 중 오류:', error);
+      console.error(`${provider} 로그인 처리 중 에러 발생:`, error);
+      alert("로그인창을 불러오지 못했습니다. 다시 시도해 주세요.");
       setIsLoggingIn(false);
     }
   };
@@ -75,24 +38,24 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         <div className="bg-login w-[800px] h-[600px] shadow-2xl flex relative">
           <button
             onClick={onClose}
-            className="absolute text-black top-4 right-4 text-2xl z-10"
+            className="absolute z-10 text-2xl text-black top-4 right-4"
           >
             ×
           </button>
           {/* 왼쪽 영역 */}
-          <div className="w-1/2 flex items-center justify-center ">
+          <div className="flex items-center justify-center w-1/2 ">
             <img width={400} height={600} src={pic} alt="로그인 이미지" />
           </div>
-          <div className="absolute bg-black bg-opacity-10 left-1/2 w-px h-full transform -translate-x-1/2"></div>
+          <div className="absolute w-px h-full transform -translate-x-1/2 bg-black bg-opacity-10 left-1/2"></div>
           {/* 오른쪽 영역 */}
-          <div className="bg-login w-1/2 flex-col flex items-center justify-center">
+          <div className="flex flex-col items-center justify-center w-1/2 bg-login">
             <p className="text-main text-[40px] mb-[100px] font-bold">Login</p>
-            <div className="flex items-center flex-col gap-4">
+            <div className="flex flex-col items-center gap-4">
               <button
-                onClick={() => handleLogin('kakao')}
+                onClick={() => handleLogin("kakao")}
                 disabled={isLoggingIn}
                 className={`${baseClasses} bg-[#FEE500] text-black hover:opacity-90 transition ${
-                  isLoggingIn ? 'opacity-50 cursor-not-allowed' : ''
+                  isLoggingIn ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >
                 <svg
@@ -111,10 +74,10 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 카카오 계정으로 로그인
               </button>
               <button
-                onClick={() => handleLogin('google')}
+                onClick={() => handleLogin("google")}
                 disabled={isLoggingIn}
                 className={`${baseClasses} bg-white text-black border border-[#dadce0] hover:bg-gray-100 transition ${
-                  isLoggingIn ? 'opacity-50 cursor-not-allowed' : ''
+                  isLoggingIn ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >
                 <svg

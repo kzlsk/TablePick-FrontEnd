@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTagQuery } from "@/entities/tag/hook/useTagQuery";
 import { TagProps } from "@/entities/tag/types/tagType";
-import search from '@/@shared/images/magnifying-glass.png'
+import search from "@/@shared/images/magnifying-glass.png";
 import RoundedBtn from "../../../@shared/components/Button/RoundedBtn";
 import Modal from "../../../@shared/components/Modal/Modal";
 import { useNavigate } from "react-router-dom";
@@ -9,14 +9,25 @@ import { useNavigate } from "react-router-dom";
 interface SearchModalProps {
   isOpen?: boolean;
   onClose: () => void;
-  currentKeyword?: string; 
-  currentTagIds?: number[]; 
+  currentKeyword?: string;
+  currentTagIds?: number[];
+  currentOnlyOperating?: boolean;
+  currentSort?: string;
 }
 
-export default function SearchModal({ isOpen, onClose, currentKeyword = '', currentTagIds = [] }: SearchModalProps) {
+export default function SearchModal({
+  isOpen,
+  onClose,
+  currentKeyword = "",
+  currentTagIds = [],
+  currentOnlyOperating = false,
+  currentSort = "",
+}: SearchModalProps) {
   const { data: tagsItems, isLoading, isError } = useTagQuery();
   const [inputText, setInputText] = useState(currentKeyword);
   const [selectedItems, setSelectedItems] = useState<number[]>(currentTagIds);
+  const [onlyOperating, setOnlyOperating] = useState(currentOnlyOperating);
+  const [sort, setSort] = useState(currentSort);
   const navigate = useNavigate();
 
   if (!isOpen) return null;
@@ -28,9 +39,9 @@ export default function SearchModal({ isOpen, onClose, currentKeyword = '', curr
   const handleItemClick = (tagId: number) => {
     if (selectedItems.includes(tagId)) return;
     if (selectedItems.length >= 3) {
-      alert('태그는 최대 3개 까지만 선택 가능합니다!');
+      alert("태그는 최대 3개 까지만 선택 가능합니다!");
       return;
-    } 
+    }
 
     setSelectedItems((prev) => [...prev, tagId]);
   };
@@ -41,35 +52,31 @@ export default function SearchModal({ isOpen, onClose, currentKeyword = '', curr
 
   const handleSubmit = () => {
     const keyword = inputText.trim();
-    const tagIds = selectedItems; 
+    const tagIds = selectedItems;
 
     const newSearchParams = new URLSearchParams();
-    if (keyword) {
-      newSearchParams.set('keyword', keyword);
-    }
-    if (tagIds.length > 0) {
-      newSearchParams.set('tagIds', tagIds.join(','));
-    }
-    newSearchParams.set('page','1');
+    if (keyword) newSearchParams.set("keyword", keyword);
+    if (tagIds.length) newSearchParams.set("tagIds", tagIds.join(","));
+    if (onlyOperating) newSearchParams.set("onlyOperating", "true");
+    if (sort) newSearchParams.set("sort", sort);
+    newSearchParams.set("page", "1");
 
     const targetUrl = `/restaurants?${newSearchParams.toString()}`;
-
     navigate(targetUrl);
     onClose();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSubmit();
     }
   };
 
   const handleClose = () => {
-    setInputText('');
+    setInputText("");
     setSelectedItems([]);
     onClose();
   };
-
 
   return (
     <Modal
@@ -77,7 +84,10 @@ export default function SearchModal({ isOpen, onClose, currentKeyword = '', curr
       height="500px"
       onClose={onClose}
       close={
-        <button onClick={handleClose} className="text-main font-bold text-xl inset-0 z-50">
+        <button
+          onClick={handleClose}
+          className="inset-0 z-50 text-xl font-bold text-main"
+        >
           X
         </button>
       }
@@ -95,21 +105,26 @@ export default function SearchModal({ isOpen, onClose, currentKeyword = '', curr
         />
       }
     >
-      <div className="space-y-6 px-4 py-2">
+      <div className="px-4 py-2 space-y-6">
         <div>
           <p className="text-xl font-bold text-main">검색</p>
         </div>
 
-        <div className="flex flex-wrap items-center border border-main rounded-full px-4 py-2 gap-2">
+        <div className="flex flex-wrap items-center gap-2 px-4 py-2 border rounded-full border-main">
           {selectedItems.map((id) => {
-            const tag = tagsItems.find(t => t.id === id); 
-            return tag ? ( 
+            const tag = tagsItems.find((t) => t.id === id);
+            return tag ? (
               <div
-                key={tag.id} 
-                className="flex items-center bg-main text-white px-3 py-1 rounded-full text-sm"
+                key={tag.id}
+                className="flex items-center px-3 py-1 text-sm text-white rounded-full bg-main"
               >
-                {tag.name} 
-                <button onClick={() => handleItemRemove(tag.id)} className="ml-2">✕</button>
+                {tag.name}
+                <button
+                  onClick={() => handleItemRemove(tag.id)}
+                  className="ml-2"
+                >
+                  ✕
+                </button>
               </div>
             ) : null;
           })}
@@ -122,22 +137,29 @@ export default function SearchModal({ isOpen, onClose, currentKeyword = '', curr
             className="flex-grow min-w-[120px] outline-none text-base"
           />
           <button type="button" onClick={handleSubmit}>
-            <img width={24} height={24} src={search} alt="검색" className="w-6 h-6" />
+            <img
+              width={24}
+              height={24}
+              src={search}
+              alt="검색"
+              className="w-6 h-6"
+            />
           </button>
         </div>
 
         <div>
-          <p className="text-md font-semibold text-gray-700">카테고리 (최대 3개 선택 가능)</p>
+          <p className="font-semibold text-gray-700 text-md">
+            카테고리 (최대 3개 선택 가능)
+          </p>
           <div className="flex flex-wrap gap-2 mt-2">
             {tagsItems.map((tag: TagProps) => (
               <button
                 key={tag.id}
-                
                 onClick={() => handleItemClick(tag.id)}
                 className={`border px-3 py-1 rounded-full text-sm transition ${
-                  selectedItems.includes(tag.id) 
-                    ? 'bg-main text-white border-main'
-                    : 'border-main text-main hover:bg-main hover:text-white'
+                  selectedItems.includes(tag.id)
+                    ? "bg-main text-white border-main"
+                    : "border-main text-main hover:bg-main hover:text-white"
                 }`}
               >
                 {tag.name}

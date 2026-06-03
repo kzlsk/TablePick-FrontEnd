@@ -1,5 +1,8 @@
 export interface AddMemberInfoProps {
-  gender: 'MALE' | 'FEMALE' | '';
+  id: string | number;
+  nickname: string;
+  profile_image: string;
+  gender: "MALE" | "FEMALE" | "";
   birthdate: string;
   phoneNumber: string;
   memberTags: number[];
@@ -7,9 +10,8 @@ export interface AddMemberInfoProps {
 
 export interface MemberFormData {
   nickname: string;
-  gender: 'MALE' | 'FEMALE' | '';  // ''는 선택 안 했을 때
+  gender: "MALE" | "FEMALE" | ""; // ''는 선택 안 했을 때
   birthdate: string;
   phoneNumber: string;
-  profileImage: string;
-  memberTags: number[];  // 백엔드가 id만 받으면 number[]만 써도 됨
+  memberTags: number[]; // 백엔드가 id만 받으면 number[]만 써도 됨
 }

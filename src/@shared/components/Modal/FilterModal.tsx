@@ -3,7 +3,7 @@ import Modal from "./Modal";
 import RoundedBtn from "../Button/RoundedBtn";
 
 interface FilterModalProps {
-  isOpen? : boolean;
+  isOpen?: boolean;
   selectedTags: number[];
   setSelectedTags: React.Dispatch<React.SetStateAction<number[]>>;
   onClose: () => void;
@@ -17,11 +17,11 @@ export default function FilterModal({
   onClose,
   onClick,
 }: FilterModalProps) {
-  if (!isOpen) return false
+  if (!isOpen) return false;
   const { data: tagsItem, isLoading, isError } = useTagQuery();
 
-  if (isLoading) return <p>로딩 중...</p>
-  if (isError) return <p>태그 데이터 불러오는 중 오류 발생</p>
+  if (isLoading) return <p>로딩 중...</p>;
+  if (isError) return <p>태그 데이터 불러오는 중 오류 발생</p>;
   if (!tagsItem) return null;
 
   const handleToggleTag = (tagId: number) => {
@@ -41,12 +41,12 @@ export default function FilterModal({
       onClose={onClose}
       close={
         <button
-    onClick={(e) => {
-      e.stopPropagation();
-      onClose();
-    }}
-    className="text-main font-bold text-xl absolute top-2 right-2"
-  >
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          className="absolute text-xl font-bold text-main top-2 right-2"
+        >
           X
         </button>
       }
@@ -68,11 +68,11 @@ export default function FilterModal({
       }
     >
       <div className="m-3">
-        <p className="text-main font-bold text-2xl mb-4">카테고리 선택</p>
+        <p className="mb-4 text-2xl font-bold text-main">카테고리 선택</p>
 
         {/* 선택된 태그 표시 */}
         {selectedTags.length > 0 && (
-          <div className="mb-4 p-2 border border-gray-200 rounded-md">
+          <div className="p-2 mb-4 border border-gray-200 rounded-md">
             <div className="flex flex-wrap gap-2">
               {selectedTags.map((id) => {
                 const tag = tagsItem.find((t) => t.id === id);
@@ -80,12 +80,12 @@ export default function FilterModal({
                   tag && (
                     <div
                       key={tag.id}
-                      className="flex items-center bg-main rounded-lg px-2 py-1 text-sm font-medium text-white"
+                      className="flex items-center px-2 py-1 text-sm font-medium text-white rounded-lg bg-main"
                     >
                       <span>{tag.name}</span>
                       <button
                         onClick={() => handleRemoveTag(tag.id)}
-                        className="ml-2 text-white font-bold"
+                        className="ml-2 font-bold text-white"
                       >
                         ×
                       </button>
@@ -112,7 +112,7 @@ export default function FilterModal({
                   !selectedTags.includes(tag.id) && selectedTags.length >= 5
                 }
               />
-              <span className="text-gray-800 font-medium">{tag.name}</span>
+              <span className="font-medium text-gray-800">{tag.name}</span>
             </label>
           ))}
         </div>

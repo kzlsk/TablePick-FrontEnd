@@ -1,12 +1,11 @@
 interface TagProps {
-    text: string;
+  text: string;
 }
 
-export default function Tag({text}: TagProps) {
-    return (
-        <span
-            className="whitespace-nowrap text-base font-semibold bg-main shadow-xl text-white px-4 py-4 inline-block text-center rounded-20">
-            {text}
-       </span>
-    )
+export default function Tag({ text }: TagProps) {
+  return (
+    <span className="inline-block px-4 py-4 text-base font-semibold text-center text-white shadow-xl whitespace-nowrap bg-main rounded-20">
+      {text}
+    </span>
+  );
 }

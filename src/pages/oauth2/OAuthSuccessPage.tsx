@@ -1,156 +1,142 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import useAuth from '@/features/auth/hook/useAuth'
-import {
-  getFCMToken,
-  getSavedFCMToken,
-  saveFCMToken,
-} from '../../features/notification/lib/firebase';
-import defaultProfile from '@/@shared/images/user.png';
-import api from '../../@shared/api/api';
-import { useFcmtokenUpdate } from '@/features/auth/hook/mutations/useFcmtokenUpdate';
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import useAuth from "@/features/auth/hook/useAuth";
+import defaultProfile from "@/@shared/images/user.png";
+import { supabase } from "@/@shared/types/supabase";
 
 export default function OauthSuccess() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isLoginProcessed, setIsLoginProcessed] = useState(false); // 로그인 처리 플래그
-
-  const { mutateAsync: updateFcmtoken } = useFcmtokenUpdate();
+  const isProcessed = useRef(false);
 
   useEffect(() => {
-    let isMounted = true; // 마운트 상태 체크
+    let isMounted = true;
 
-    async function fetchUserInfoAndHandleFCM() {
-      if (!isMounted) return; // 컴포넌트가 언마운트된 경우 중단
+    const handleOAuthLogin = async () => {
+      if (isProcessed.current) return;
 
       try {
+        isProcessed.current = true;
         setLoading(true);
 
-        // FCM 토큰 처리와 사용자 정보 요청을 병렬로 실행
-        const [userResponse, fcmToken] = await Promise.all([
-          api.get(`/api/members`),
-          (async () => {
-            try {
-              let token = getSavedFCMToken();
-              if (!token) {
-                token = await getFCMToken();
-              }
-              return token;
-            } catch (fcmError) {
-              console.error('FCM 토큰 가져오기 실패:', fcmError);
-              return null;
-            }
-          })(),
-        ]);
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
-        const userData = userResponse.data;
+        if (sessionError) throw sessionError;
+        if (!isMounted) return;
 
-        if (!userData || !userData.email || !userData.id) {
-          throw new Error('잘못된 사용자 데이터');
-        }
+        if (session) {
+          const supabaseUser = session.user;
+          const metadata = supabaseUser.user_metadata;
 
-        // FCM 토큰 서버 저장 (에러 무시)
-        if (fcmToken && userData.id) {
-          try {
-            await saveFCMToken(userData.id, fcmToken, updateFcmtoken);
-          } catch (fcmError) {
-            console.error('FCM 토큰 서버 저장 실패:', fcmError);
+          if (!supabaseUser || !supabaseUser.email) {
+            throw new Error("유효하지 않은 사용자 정보");
           }
-        } else {
-          console.warn('FCM 토큰 또는 사용자 ID가 없음');
-        }
 
-        // 사용자 태그 처리
-        let memberTagsForAuthContext: number[] = [];
-        if (Array.isArray(userData.memberTagIds)) {
-          memberTagsForAuthContext = userData.memberTagIds
-            .map((tagId: any) => Number(tagId))
-            .filter((id: number) => !isNaN(id));
-        } else {
-          console.warn(
-            '서버 응답에 memberTagIds 필드가 없거나 배열이 아닙니다:',
-            userData.memberTagIds
-          );
-          memberTagsForAuthContext = [];
-        }
+          const email = supabaseUser.email;
+          const nickname =
+            metadata?.name ||
+            metadata?.full_name ||
+            metadata?.custom_claims?.kakao_account?.profile?.nickname ||
+            "맛객";
 
-        const isUserRecentlyCreated = userData.createAt
-          ? isRecentlyCreated(userData.createAt)
-          : false;
+          const rawProfileImage =
+            metadata?.avatar_url ||
+            metadata?.picture ||
+            metadata?.custom_claims?.kakao_account?.profile
+              ?.profile_image_url ||
+            "";
 
-        const hasCompletedAdditionalnfo = sessionStorage.getItem(
-          `hasCompletedAdditionalInfo_${userData.id}`
-        );
+          const profileImage = rawProfileImage
+            ? `https://wsrv.nl/?url=${encodeURIComponent(rawProfileImage.replace(/=s\d+-c/g, "=s400"))}`
+            : defaultProfile;
 
-        const shouldShowAdditionalInfoModal =
-          isUserRecentlyCreated && !hasCompletedAdditionalnfo;
+          const gender =
+            metadata?.gender ||
+            metadata?.custom_claims?.kakao_account?.gender ||
+            "";
+          const birthdate = metadata?.birthdate || "";
+          const phoneNumber =
+            supabaseUser.phone || metadata?.phone_number || "";
 
-        const normalizedUser = {
-          id: userData.id,
-          email: userData.email,
-          nickname: userData.nickname || userData.name || '',
-          profileImage: userData.profileImage || defaultProfile,
-          gender: userData.gender || '',
-          birthdate: userData.birthdate || '',
-          phoneNumber: userData.phoneNumber || '',
-          memberTags: memberTagsForAuthContext,
-          createAt: userData.createAt || '',
-          isNewUser: shouldShowAdditionalInfoModal,
-        };
+          const createdAt = new Date(supabaseUser.created_at);
+          const now = new Date();
+          const isNewUser =
+            (now.getTime() - createdAt.getTime()) / (1000 * 60) < 1;
 
-        // 로그인 처리 (중복 방지 플래그 설정)
-        if (!isLoginProcessed) {
+          const normalizedUser = {
+            id: supabaseUser.id as any,
+            email: email,
+            nickname: nickname,
+            profileImage: profileImage,
+            gender: gender,
+            birthdate: birthdate,
+            phoneNumber: phoneNumber,
+            memberTags: [],
+            createAt: supabaseUser.created_at,
+            isNewUser: isNewUser,
+          };
           login(normalizedUser);
-          sessionStorage.setItem('userInfo', JSON.stringify(normalizedUser));
+          sessionStorage.setItem("userInfo", JSON.stringify(normalizedUser));
 
           const params = new URLSearchParams(location.search);
-          const redirectUrl = params.get('redirect') || '/';
+          const redirectUrl = params.get("redirect") || "/";
 
-          if (!shouldShowAdditionalInfoModal) {
-            alert('로그인 성공'); // 한 번만 호출
-            navigate(redirectUrl);
+          if (!isNewUser) {
+            alert(`${nickname}님, 반가워요! 로그인이 완료되었습니다.`);
+            navigate(redirectUrl, { replace: true });
           } else {
-            navigate('/', { state: { redirectUrl, showFilterModal: true } });
+            alert("회원가입을 환영합니다! 추가 정보를 입력해 주세요.");
+            navigate("/", {
+              state: { redirectUrl, showFilterModal: true },
+              replace: true,
+            });
           }
-
-          setIsLoginProcessed(true); // 로그인 처리 완료 표시
+        } else {
+          throw new Error("인증 세션을 유효하게 가져오지 못했습니다.");
         }
-      } catch (error) {
-        console.error('사용자 정보 가져오기 실패:', error);
-        setError('로그인 처리 중 오류가 발생했습니다.');
+      } catch (err: any) {
+        console.error("OAuth 로그인 처리 중 에러 발생:", err);
+        if (isMounted) {
+          setError(err.message || "로그인 처리 중 오류가 발생했습니다.");
+        }
+        isProcessed.current = false;
       } finally {
-        if (isMounted) setLoading(false); // 마운트 상태 확인 후 로딩 해제
+        if (isMounted) setLoading(false);
       }
-    }
-
-    fetchUserInfoAndHandleFCM();
-
-    // 클린업
-    return () => {
-      isMounted = false; // 컴포넌트 언마운트 시 마운트 상태 변경
     };
-  }, [login, navigate, location.search]); 
 
-  const isRecentlyCreated = (createdAtStr: string): boolean => {
-    const createdAt = new Date(createdAtStr);
-    const now = new Date();
-    const diffInMinutes = (now.getTime() - createdAt.getTime()) / (1000 * 60);
-    return diffInMinutes < 1;
-  };
+    handleOAuthLogin();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   if (loading) {
-    return <div className="mt-[80px] text-center">로그인 중입니다...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <div className="w-10 h-10 border-4 rounded-full border-t-transparent border-main animate-spin" />
+        <p className="text-sm font-medium text-gray-500">
+          테이블픽 안전 로그인 처리 중입니다...
+        </p>
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="mt-[80px] text-center">
-        <p className="text-red-500">{error}</p>
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
+        <p className="mb-2 font-semibold text-red-500">인증 오류</p>
+        <p className="max-w-sm mb-6 text-sm text-gray-600">{error}</p>
         <button
-          onClick={() => navigate('/')}
-          className="mt-4 px-4 py-2 bg-main text-white rounded-md"
+          onClick={() => navigate("/")}
+          className="px-6 py-2.5 text-white rounded-xl bg-main shadow-md font-semibold text-sm hover:opacity-90"
         >
           홈으로 돌아가기
         </button>
@@ -158,5 +144,5 @@ export default function OauthSuccess() {
     );
   }
 
-  return <div className="mt-[80px] text-center">로그인 처리 중입니다...</div>;
+  return null;
 }

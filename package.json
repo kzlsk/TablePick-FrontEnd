@@ -2,7 +2,6 @@
   "name": "tablepick-frontend",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "staging": "vite --host --mode staging",
@@ -12,6 +11,7 @@
     "coverage": "jest --coverage"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.106.2",
     "@tanstack/react-query": "^5.80.6",
     "axios": "^1.9.0",
     "clsx": "^2.1.1",
@@ -36,6 +36,7 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
+    "@types/cypress": "^0.1.6",
     "@types/jest": "^29.5.14",
     "@types/leaflet": "^1.9.17",
     "@types/lodash": "^4.17.17",
