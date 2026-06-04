@@ -61,6 +61,28 @@ https://github.com/user-attachments/assets/2b26af87-cc17-45c9-9f69-89b4a04ab9cd
 - `onBeforeLoad`로 sessionStorage 직접 주입 → 세션 초기화 문제 해결
 ---
 
+## 🛠️ Backend Architecture Migration (Java Spring ➡️ Supabase)
+Vercel을 통한 프론트엔드 자동 배포 환경에 최적화하고 인프라 관리 리소스를 최소화하기 위해, 기존 Java Spring 백엔드 구조를 서버리스 인프라인 Supabase로 전면 전환하였습니다.
+
+### 🔄 주요 변경 및 구현 사항
+* **인증 및 세션 관리 (Auth):** Spring Security 기반의 인증 루틴을 Supabase Auth 패키지로 이관하여 카카오 소셜 로그인 및 사용자 세션 유지 관리의 복잡성을 제거 (useContext 및 useRef 기반 동시성 제어 적용)
+* **데이터베이스 및 API:** Spring Data JPA 레이어를 Supabase PostgreSQL 및 JS Client API로 대체하여 프론트엔드 단에서의 유연한 데이터 쿼리 구현
+* **스토리지 관리:** 식당 이미지 및 유저 프로필 업로드 인프라를 Supabase Storage 인프라로 전환
+
+---
+
+## 🚀 1차 배포 (MVP) 현황 및 한계점 (Known Issues)
+
+현재 Vercel을 통한 1차 배포 버전은 핵심 핵심 비즈니스 로직(예약 체크, 회원 관리 등)을 우선 검증하기 위한 MVP 스펙입니다.
+<br />
+아래 미구현 기능들은 순차적으로 패치될 예정입니다.
+
+* **FCM 푸시 알림:** 웹 푸시 인증 및 백그라운드 핸들러 안정화를 위해 현재 관련 코드는 주석 처리된 상태입니다.
+* **AI 기반 식당 추천 콘텐츠:** AI 추천 알고리즘 엔진 연동 전 단계로, 현재 메인 화면은 최신 등록 ID 기준 4개의 고정 콘텐츠로 임시 대체하여 UI 레이아웃을 검증하고 있습니다.
+* **식당 이미지:** 일부 API 미연동 구역 및 이미지 누락 데이터는 기본 로고와 대체 이미지로 처리되었습니다.
+
+---
+
 ## 📂 프로젝트 구조
 FSD(Feature-Sliced Design) 아키텍처를 참고해 프로젝트 규모에 맞게 필요한 레이어만 적용했습니다.
 
