@@ -28,6 +28,13 @@ function RestaurantCard({
       <div className="w-full h-[250px] overflow-hidden">
         <img
           src={item.imageUrl || logo}
+          srcSet={
+            item.imageUrl
+              ? `${item.imageUrl.replace("600/400", "400/300")} 400w, 
+                ${item.imageUrl} 600w, 
+                ${item.imageUrl.replace("600/400", "800/600")} 800w`
+              : undefined
+          }
           alt={item.name}
           className="object-cover w-full h-full"
         />
@@ -89,6 +96,14 @@ function PostCard({ item, onClick }: { item: Post; onClick?: () => void }) {
       <div className="w-full h-[250px] overflow-hidden">
         <img
           src={item.imageUrl || logo}
+          srcSet={
+            item.imageUrl
+              ? `${item.imageUrl.replace("600/400", "400/300")} 400w, 
+                ${item.imageUrl} 600w, 
+                ${item.imageUrl.replace("600/400", "800/600")} 800w`
+              : undefined
+          }
+          sizes="(max-width: 600px) 400px, (max-width: 900px) 600px, 800px"
           alt={item.restaurantName}
           className="object-cover w-full h-full"
         />
