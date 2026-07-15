@@ -220,6 +220,10 @@ export function PostWriteModal({
               >
                 <img
                   src={preview}
+                  srcSet={`${preview.replace("600/400", "400/300")} 400w, 
+                    ${preview} 600w, 
+                    ${preview.replace("600/400", "800/600")} 800w`}
+                  sizes="(max-width: 600px) 400px, (max-width: 900px) 600px, 800px"
                   alt={`첨부 이미지 ${index + 1}`}
                   className="object-cover w-full h-16"
                 />
