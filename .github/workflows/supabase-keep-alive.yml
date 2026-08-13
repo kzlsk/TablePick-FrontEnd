@@ -1,0 +1,27 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # 매일 자정에 실행
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  ping-database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase API
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" -X GET \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+            -H "apikey: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}")
+
+          echo "HTTP Status Code: $response"
+
+          if [ "$response" -ge 200 ] && [ "$response" -lt 400 ]; then
+            echo "Successfully kept Supabase alive!"
+          else
+            echo "Failed with status code: $response"
+            exit 1
+          fi
