@@ -74,9 +74,6 @@ export default function PostDetail() {
               >
                 <img
                   src={imageUrl || defaultPost}
-                  srcSet={`${imageUrl.replace("600/400", "400/300")} 400w, 
-                    ${imageUrl} 600w, 
-                    ${imageUrl.replace("600/400", "800/600")} 800w`}
                   sizes="(max-width: 600px) 400px, (max-width: 900px) 600px, 800px"
                   alt={`Post Image ${i + 1}`}
                   className="object-cover w-full h-full rounded-lg"
@@ -90,9 +87,6 @@ export default function PostDetail() {
           <div className="flex items-center justify-center w-full text-gray-500 bg-gray-200 rounded-lg aspect-square">
             <img
               src={defaultPost}
-              srcSet={`${defaultPost.replace("600/400", "400/300")} 400w, 
-                    ${defaultPost} 600w, 
-                    ${defaultPost.replace("600/400", "800/600")} 800w`}
               sizes="(max-width: 600px) 400px, (max-width: 900px) 600px, 800px"
               className="object-cover w-full h-full rounded-lg"
               referrerPolicy="no-referrer"

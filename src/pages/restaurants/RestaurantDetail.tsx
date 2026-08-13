@@ -185,9 +185,6 @@ export default function RestaurantDetail() {
                 <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
                   <img
                     src={imageUrl}
-                    srcSet={`${imageUrl.replace("600/400", "400/300")} 400w, 
-                      ${imageUrl} 600w, 
-                      ${imageUrl.replace("600/400", "800/600")} 800w`}
                     sizes="(max-width: 600px) 400px, (max-width: 900px) 600px, 800px"
                     alt={data.name}
                     className="object-cover w-full h-full"
@@ -256,13 +253,6 @@ export default function RestaurantDetail() {
                       >
                         <img
                           src={p.imageUrl || "/placeholder.svg"}
-                          srcSet={
-                            p.imageUrl
-                              ? `${p.imageUrl.replace("600/400", "400/300")} 400w, 
-                                  ${p.imageUrl} 600w, 
-                                  ${p.imageUrl.replace("600/400", "800/600")} 800w`
-                              : undefined
-                          }
                           sizes="(max-width: 600px) 400px, (max-width: 900px) 600px, 800px"
                           alt={`리뷰 ${p.boardId}`}
                           className="object-cover w-full h-full transition-transform hover:scale-105"

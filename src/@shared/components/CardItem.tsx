@@ -41,9 +41,6 @@ const CardItem = ({
       {image && (
         <img
           src={image}
-          srcSet={`${image.replace("600/400", "400/300")} 400w, 
-           ${image} 600w, 
-           ${image.replace("600/400", "800/600")} 800w`}
           sizes="(max-width: 600px) 400px, (max-width: 900px) 600px, 800px"
           alt={restaurantName}
           className={`w-full h-[200px] rounded-md object-cover mb-2 ${imageStyle}`}
