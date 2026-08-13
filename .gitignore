@@ -35,3 +35,5 @@ firebase.ts
 **/firebase.ts
 
 
+.vercel
+.env*
