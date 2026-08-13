@@ -252,10 +252,13 @@ export default function RestaurantDetail() {
                         className="relative overflow-hidden rounded-lg cursor-pointer aspect-square"
                       >
                         <img
-                          src={p.imageUrl || "/placeholder.svg"}
+                          src={p.imageUrl ? p.imageUrl : defaultImg}
                           sizes="(max-width: 600px) 400px, (max-width: 900px) 600px, 800px"
                           alt={`리뷰 ${p.boardId}`}
                           className="object-cover w-full h-full transition-transform hover:scale-105"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = defaultImg;
+                          }}
                         />
                       </div>
                     ))}

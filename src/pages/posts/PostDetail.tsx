@@ -84,11 +84,11 @@ export default function PostDetail() {
           )
         ) : (
           // 이미지가 없을 경우 대체 UI
-          <div className="flex items-center justify-center w-full text-gray-500 bg-gray-200 rounded-lg aspect-square">
+          <div className="flex items-center justify-center w-full bg-gray-200 rounded-lg aspect-square">
             <img
               src={defaultPost}
-              sizes="(max-width: 600px) 400px, (max-width: 900px) 600px, 800px"
-              className="object-cover w-full h-full rounded-lg"
+              alt="기본 이미지"
+              className="object-contain w-1/2 h-1/2"
               referrerPolicy="no-referrer"
             />
           </div>
