@@ -42,7 +42,7 @@ export default function PostDetail() {
   }
 
   return (
-    <div className="p-5">
+    <div className="max-w-xl p-5 mx-auto my-6 bg-white rounded-lg shadow-sm">
       {/* 상단 정보 (위치 + 작성일자) */}
       <div className="flex flex-row justify-between">
         <div className="flex flex-row items-center">
@@ -53,67 +53,69 @@ export default function PostDetail() {
             className="w-[16px] h-[16px]"
             alt="Location Icon"
           />
-          <p className="ml-2">{data?.restaurantName}</p>
+          <p className="ml-2 font-medium text-gray-800">
+            {data?.restaurantName}
+          </p>
         </div>
         <div>
-          <p>{data?.createdAt}</p> {/* 임시 작성일자 */}
+          <p className="text-sm text-gray-500">{data?.createdAt}</p>
         </div>
       </div>
 
       {/* 이미지 영역 */}
       <div className="flex flex-row gap-2 my-4">
-        {data.imageUrls && data.imageUrls.length > 0 ? (
-          data.imageUrls.slice(0, 3).map(
-            (
-              imageUrl,
-              i, // 최대 3개의 이미지만 렌더링
-            ) => (
-              <div
-                key={i}
-                className="w-[calc(33.333%-1rem)] aspect-square bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden"
-              >
+        {Array.from({ length: 3 }).map((_, i) => {
+          const imageUrl = data.imageUrls?.[i];
+
+          return (
+            <div
+              key={i}
+              className="w-[calc(33.333%-0.34rem)] aspect-square bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden"
+            >
+              {imageUrl ? (
                 <img
-                  src={imageUrl || defaultPost}
+                  src={imageUrl}
                   sizes="(max-width: 600px) 400px, (max-width: 900px) 600px, 800px"
                   alt={`Post Image ${i + 1}`}
                   className="object-cover w-full h-full rounded-lg"
                   referrerPolicy="no-referrer"
                 />
-              </div>
-            ),
-          )
-        ) : (
-          // 이미지가 없을 경우 대체 UI
-          <div className="flex items-center justify-center w-full bg-gray-200 rounded-lg aspect-square">
-            <img
-              src={defaultPost}
-              alt="기본 이미지"
-              className="object-contain w-1/2 h-1/2"
-              referrerPolicy="no-referrer"
-            />
-          </div>
-        )}
+              ) : (
+                <img
+                  src={defaultPost}
+                  alt="기본 이미지"
+                  className="object-contain w-12 h-12 rounded-lg"
+                  referrerPolicy="no-referrer"
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* 태그 영역 */}
-      {/* <div className="my-4">
-        <p className="font-semibold text-gray-800">태그</p>
-        <div className="flex flex-wrap gap-2">
-          {data..map((tag, i) => (
-            <span
-              key={i}
-              className="px-3 py-1 text-sm text-blue-500 bg-blue-100 rounded-full"
-            >
-              {tag}
-            </span>
-          ))}
+      {data.tagNames && data.tagNames.length > 0 && (
+        <div className="my-4">
+          <p className="font-semibold text-gray-800">태그</p>
+          <div className="flex flex-wrap gap-2 mt-1">
+            {data.tagNames.map((tag, i) => (
+              <span
+                key={i}
+                className="px-3 py-1 text-sm text-blue-500 bg-blue-100 rounded-full"
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
         </div>
-      </div> */}
+      )}
 
       {/* 내용 영역 */}
       <div className="my-4">
         <p className="font-semibold text-gray-800">내용</p>
-        <p className="text-gray-600">{data?.content}</p>
+        <p className="mt-1 text-gray-600 whitespace-pre-wrap">
+          {data?.content}
+        </p>
       </div>
     </div>
   );
