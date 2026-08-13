@@ -3,8 +3,8 @@ import dotenv from "dotenv";
 
 dotenv.config({ path: ".env.local" });
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_KEY || !GOOGLE_PLACES_API_KEY) {
