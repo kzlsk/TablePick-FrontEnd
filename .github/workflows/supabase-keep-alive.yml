@@ -10,18 +10,27 @@ jobs:
   ping-database:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase API
+      - name: Ping Supabase API (debug)
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" -X GET \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/" \
-            -H "apikey: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}")
+          echo "URL 앞부분 확인 (키 노출 방지 위해 일부만): ${SUPABASE_URL:0:20}..."
 
-          echo "HTTP Status Code: $response"
+          response=$(curl -s -w "\n%{http_code}" \
+            "${SUPABASE_URL}/rest/v1/restaurants?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_KEY}")
 
-          if [ "$response" -ge 200 ] && [ "$response" -lt 400 ]; then
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "HTTP Status Code: $http_code"
+          echo "Response Body: $body"
+
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 400 ]; then
             echo "Successfully kept Supabase alive!"
           else
-            echo "Failed with status code: $response"
+            echo "Failed with status code: $http_code"
             exit 1
           fi
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
